@@ -4,7 +4,6 @@ import '../../../geekyants_flutter_gauges.dart';
 
 class RenderRadialWidgetPointer extends RenderProxyBox {
   RenderRadialWidgetPointer({
-    Key? key,
     required double value,
     required RadialGauge radialGauge,
     required bool isInteractive,
@@ -66,34 +65,59 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
   }
 
   @override
+  void performLayout() {
+    // Use the same layout logic as the shape pointer
+    size = Size(constraints.maxWidth, constraints.maxHeight);
+
+    if (child != null) {
+      // Layout the child with the available constraints
+      child!.layout(constraints, parentUsesSize: true);
+    }
+  }
+
+  @override
   void paint(PaintingContext context, Offset offset) {
+    if (child == null) return;
+
+    final canvas = context.canvas;
+
     double gaugeStart = _radialGauge.track.start;
     double gaugeEnd = _radialGauge.track.end;
 
-    // final center = Offset(offset.dx, offset.dy);
+    // Use the exact same center calculation as the shape pointer
     final center = Offset(
-        1440 * _radialGauge.xCenterCoordinate -
-            2 * _radialGauge.track.thickness,
-        900 * _radialGauge.yCenterCoordinate - _radialGauge.track.thickness);
+        size.width * _radialGauge.xCenterCoordinate + offset.dx,
+        size.height * _radialGauge.yCenterCoordinate + offset.dy);
+
     double value = calculateValueAngle(_value, gaugeStart, gaugeEnd);
     double startAngle = (_radialGauge.track.startAngle - 180) * (pi / 180);
     double endAngle = (_radialGauge.track.endAngle - 180) * (pi / 180);
 
     final double angle = startAngle + (value / 100) * (endAngle - startAngle);
 
+    // Use the exact same offset calculation as the shape pointer
     double circlePointerOffset =
-        (900 / 2 - _radialGauge.track.thickness) * _radialGauge.radiusFactor;
+        (size.shortestSide / 2 - _radialGauge.track.thickness) *
+            _radialGauge.radiusFactor;
 
     double circlePointerEndX = center.dx + circlePointerOffset * cos(angle);
     double circlePointerEndY = center.dy + circlePointerOffset * sin(angle);
-    // canvas.drawCircle(Offset(circlePointerEndX, circlePointerEndY), 30,
-    //     Paint()..color = Colors.red);
-    super.paint(context, Offset(circlePointerEndX, circlePointerEndY));
+
+    // Center the child widget at the pointer position
+    final childCenterOffset = Offset(
+        circlePointerEndX - child!.size.width / 2,
+        circlePointerEndY - child!.size.height / 2
+    );
+
+    // Save the canvas state, translate to the correct position, and paint the child
+    canvas.save();
+    canvas.translate(childCenterOffset.dx, childCenterOffset.dy);
+    context.paintChild(child!, Offset.zero);
+    canvas.restore();
   }
 
   double calculateValueAngle(double value, double gaugeStart, double gaugeEnd) {
     double newValue = (value - gaugeStart) / (gaugeEnd - gaugeStart) * 100;
-
     return newValue;
   }
 }

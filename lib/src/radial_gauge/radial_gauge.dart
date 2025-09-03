@@ -197,31 +197,39 @@ class _RadialGaugeState extends State<RadialGauge> {
   List<Widget> _buildChildWidgets(BuildContext context) {
     _radialGaugeWidgets.clear();
 
+    // Add the container first (background/track)
     _radialGaugeWidgets.add(RadialGaugeContainer(
       radialGauge: widget,
     ));
 
-    if (widget.needlePointer != null) {
-      for (int i = 0; i < widget.needlePointer!.length; i++) {
-        _addChild(widget.needlePointer![i], null, null);
-      }
-    }
-    if (widget.widgetPointer != null) {
-      for (int i = 0; i < widget.widgetPointer!.length; i++) {
-        _addChild(widget.widgetPointer![i], null, null);
-      }
-    }
+    // Add value bars next
     if (widget.valueBar != null) {
       for (int i = 0; i < widget.valueBar!.length; i++) {
         _addChild(widget.valueBar![i], null, null);
       }
     }
 
+    // Add shape pointers next
     if (widget.shapePointer != null) {
       for (int i = 0; i < widget.shapePointer!.length; i++) {
         _addChild(widget.shapePointer![i], null, null);
       }
     }
+
+    // Add needle pointers next
+    if (widget.needlePointer != null) {
+      for (int i = 0; i < widget.needlePointer!.length; i++) {
+        _addChild(widget.needlePointer![i], null, null);
+      }
+    }
+
+    // Add widget pointers last (on top)
+    if (widget.widgetPointer != null) {
+      for (int i = 0; i < widget.widgetPointer!.length; i++) {
+        _addChild(widget.widgetPointer![i], null, null);
+      }
+    }
+
     return _radialGaugeWidgets;
   }
 

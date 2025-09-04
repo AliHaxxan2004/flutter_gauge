@@ -8,10 +8,12 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     required RadialGauge radialGauge,
     required bool isInteractive,
     required ValueChanged<double>? onChanged,
+    VoidCallback? onTap, // Add this
   })  : _value = value,
         _radialGauge = radialGauge,
         _isInteractive = isInteractive,
-        _onChanged = onChanged;
+        _onChanged = onChanged,
+        _onTap = onTap;
 
   /// Gets the value to [RadialWidgetPointer].
   double get value => _value;
@@ -119,5 +121,32 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
   double calculateValueAngle(double value, double gaugeStart, double gaugeEnd) {
     double newValue = (value - gaugeStart) / (gaugeEnd - gaugeStart) * 100;
     return newValue;
+  }
+
+  VoidCallback? get onTap => _onTap;
+  VoidCallback? _onTap;
+  set onTap(VoidCallback? value) {
+    if (value == _onTap) return;
+    _onTap = value;
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    // Always claim the hit if this render object is visible
+    if (size.contains(position)) {
+      result.add(BoxHitTestEntry(this, position));
+      return true;
+    }
+    return false;
+  }
+
+  @override
+  void handleEvent(PointerEvent event, BoxHitTestEntry entry) {
+    if (event is PointerDownEvent) {
+      if (onTap != null) {
+        onTap!();
+      }
+    }
+    super.handleEvent(event, entry);
   }
 }

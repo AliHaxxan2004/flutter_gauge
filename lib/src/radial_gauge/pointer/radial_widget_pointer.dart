@@ -27,12 +27,17 @@ class RadialWidgetPointer extends SingleChildRenderObjectWidget {
     required Widget child,
     this.isInteractive = false,
     this.onChanged,
+    this.onTap,
   }) : super(key: key, child: child);
 
   ///
   /// `value` Sets the value of the pointer on the [RadialGauge]
   ///
   final double value;
+
+
+  final VoidCallback? onTap; // Add this
+
 
   ///
   /// Specifies whether to enable the interaction for the pointers.
@@ -54,6 +59,7 @@ class RadialWidgetPointer extends SingleChildRenderObjectWidget {
       radialGauge: scope.rGauge,
       isInteractive: isInteractive,
       onChanged: onChanged,
+      onTap: onTap,
     );
   }
 
@@ -65,7 +71,8 @@ class RadialWidgetPointer extends SingleChildRenderObjectWidget {
       ..setValue = value
       ..setRadialGauge = scope.rGauge
       ..setIsInteractive = isInteractive
-      ..onChanged = onChanged;
+      ..onChanged = onChanged
+      ..onTap = onTap;
     super.updateRenderObject(context, renderObject);
   }
 }

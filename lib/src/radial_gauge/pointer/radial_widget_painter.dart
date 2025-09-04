@@ -132,7 +132,7 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    // Always claim the hit if this render object is visible
+    // Claim the entire widget area
     if (size.contains(position)) {
       result.add(BoxHitTestEntry(this, position));
       return true;
@@ -142,11 +142,11 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
   @override
   void handleEvent(PointerEvent event, BoxHitTestEntry entry) {
-    if (event is PointerDownEvent) {
+    if (event is PointerUpEvent) { // trigger on release, like a normal tap
       if (onTap != null) {
         onTap!();
       }
     }
-    super.handleEvent(event, entry);
+    // Don’t forward to super if you don’t want child gestures at all
   }
 }

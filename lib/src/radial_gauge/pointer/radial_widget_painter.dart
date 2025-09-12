@@ -112,10 +112,7 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     );
 
     // Save the canvas state, translate to the correct position, and paint the child
-    canvas.save();
-    canvas.translate(childCenterOffset.dx, childCenterOffset.dy);
-    context.paintChild(child!, Offset.zero);
-    canvas.restore();
+    context.paintChild(child!, childCenterOffset);
   }
 
   double calculateValueAngle(double value, double gaugeStart, double gaugeEnd) {
@@ -132,13 +129,48 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    // Claim the entire widget area
-    if (size.contains(position)) {
+    if (child == null) return false;
+
+    // Recalculate the child's painted offset (same math as paint)
+    double gaugeStart = _radialGauge.track.start;
+    double gaugeEnd = _radialGauge.track.end;
+
+    final center = Offset(
+      size.width * _radialGauge.xCenterCoordinate,
+      size.height * _radialGauge.yCenterCoordinate,
+    );
+
+    double value = calculateValueAngle(_value, gaugeStart, gaugeEnd);
+    double startAngle = (_radialGauge.track.startAngle - 180) * (pi / 180);
+    double endAngle = (_radialGauge.track.endAngle - 180) * (pi / 180);
+
+    final double angle = startAngle + (value / 100) * (endAngle - startAngle);
+
+    double circlePointerOffset =
+        (size.shortestSide / 2 - _radialGauge.track.thickness) *
+            _radialGauge.radiusFactor;
+
+    double circlePointerEndX = center.dx + circlePointerOffset * cos(angle);
+    double circlePointerEndY = center.dy + circlePointerOffset * sin(angle);
+
+    final childCenterOffset = Offset(
+      circlePointerEndX - child!.size.width / 2,
+      circlePointerEndY - child!.size.height / 2,
+    );
+
+    // Convert position into child's local coordinate system
+    final Offset localChildPos = position - childCenterOffset;
+
+    // Delegate hit testing to the child at its local coordinates.
+    if (child!.hitTest(result, position: localChildPos)) {
+      // add an entry for this render object so handleEvent is called on it
       result.add(BoxHitTestEntry(this, position));
       return true;
     }
+
     return false;
   }
+
 
   @override
   void handleEvent(PointerEvent event, BoxHitTestEntry entry) {

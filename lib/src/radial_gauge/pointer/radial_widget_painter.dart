@@ -10,13 +10,11 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     required bool isInteractive,
     required ValueChanged<double>? onChanged,
     VoidCallback? onTap, // Add this
-    required bool isVisible,
   })  : _value = value,
         _radialGauge = radialGauge,
         _isInteractive = isInteractive,
         _onChanged = onChanged,
-        _onTap = onTap,
-        _isVisible = isVisible;
+        _onTap = onTap;
 
   /// Gets the value to [RadialWidgetPointer].
   double get value => _value;
@@ -69,16 +67,6 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     _onChanged = value;
   }
 
-  bool get isVisible => _isVisible;
-  bool _isVisible;
-  set isVisible(bool value) {
-    if (_isVisible == value) {
-      return;
-    }
-    _isVisible = value;
-    markNeedsPaint();
-  }
-
   @override
   void performLayout() {
     // Use the same layout logic as the shape pointer
@@ -93,7 +81,7 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
   @override
   void paint(PaintingContext context, Offset offset) {
     final RenderBox? pointerChild = child;
-    if (pointerChild == null || !_isVisible) return;
+    if (pointerChild == null) return;
 
     final Offset pointerPosition = _resolvePointerPosition();
     final Offset childHalfSize =
@@ -112,9 +100,6 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (!_isVisible) {
-      return false;
-    }
     final RenderBox? pointerChild = child;
     if (pointerChild == null) return false;
 

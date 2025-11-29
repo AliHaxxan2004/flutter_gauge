@@ -99,17 +99,14 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
     // Use the exact same offset calculation as the shape pointer
     double circlePointerOffset =
-        (size.shortestSide / 2 - _radialGauge.track.thickness) *
-            _radialGauge.radiusFactor;
+        (size.shortestSide / 2) * _radialGauge.radiusFactor;
 
     double circlePointerEndX = center.dx + circlePointerOffset * cos(angle);
     double circlePointerEndY = center.dy + circlePointerOffset * sin(angle);
 
     // Center the child widget at the pointer position
-    final childCenterOffset = Offset(
-        circlePointerEndX - child!.size.width / 2,
-        circlePointerEndY - child!.size.height / 2
-    );
+    final childCenterOffset = Offset(circlePointerEndX - child!.size.width / 2,
+        circlePointerEndY - child!.size.height / 2);
 
     // Save the canvas state, translate to the correct position, and paint the child
     context.paintChild(child!, childCenterOffset);
@@ -147,8 +144,7 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     final double angle = startAngle + (value / 100) * (endAngle - startAngle);
 
     double circlePointerOffset =
-        (size.shortestSide / 2 - _radialGauge.track.thickness) *
-            _radialGauge.radiusFactor;
+        (size.shortestSide / 2) * _radialGauge.radiusFactor;
 
     double circlePointerEndX = center.dx + circlePointerOffset * cos(angle);
     double circlePointerEndY = center.dy + circlePointerOffset * sin(angle);
@@ -171,10 +167,10 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     return false;
   }
 
-
   @override
   void handleEvent(PointerEvent event, BoxHitTestEntry entry) {
-    if (event is PointerUpEvent) { // trigger on release, like a normal tap
+    if (event is PointerUpEvent) {
+      // trigger on release, like a normal tap
       if (onTap != null) {
         onTap!();
       }

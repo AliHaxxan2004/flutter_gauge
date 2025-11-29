@@ -20,24 +20,29 @@ import '../radial_gauge_state.dart';
 /// ```
 ///
 
-class RadialWidgetPointer extends SingleChildRenderObjectWidget {
+class RadialWidgetPointer extends ImplicitlyAnimatedWidget {
   const RadialWidgetPointer({
     Key? key,
     required this.value,
-    required Widget child,
+    required this.child,
     this.isInteractive = false,
     this.onChanged,
     this.onTap,
-  }) : super(key: key, child: child);
+    Duration duration = const Duration(milliseconds: 500),
+    Curve curve = Curves.easeInOut,
+  }) : super(key: key, duration: duration, curve: curve);
 
   ///
   /// `value` Sets the value of the pointer on the [RadialGauge]
   ///
   final double value;
 
+  ///
+  /// `child` is the widget to be displayed at the pointer position
+  ///
+  final Widget child;
 
   final VoidCallback? onTap; // Add this
-
 
   ///
   /// Specifies whether to enable the interaction for the pointers.
@@ -51,12 +56,59 @@ class RadialWidgetPointer extends SingleChildRenderObjectWidget {
   final ValueChanged<double>? onChanged;
 
   @override
-  RenderObject createRenderObject(BuildContext context) {
+  ImplicitlyAnimatedWidgetState<RadialWidgetPointer> createState() =>
+      _RadialWidgetPointerState();
+}
+
+class _RadialWidgetPointerState
+    extends AnimatedWidgetBaseState<RadialWidgetPointer> {
+  Tween<double>? _valueTween;
+
+  @override
+  void forEachTween(TweenVisitor<dynamic> visitor) {
+    _valueTween = visitor(
+      _valueTween,
+      widget.value,
+      (dynamic value) => Tween<double>(begin: value as double),
+    ) as Tween<double>?;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
 
+    return _RadialWidgetPointerRenderWidget(
+      value: _valueTween?.evaluate(animation) ?? widget.value,
+      radialGauge: scope.rGauge,
+      isInteractive: widget.isInteractive,
+      onChanged: widget.onChanged,
+      onTap: widget.onTap,
+      child: widget.child,
+    );
+  }
+}
+
+class _RadialWidgetPointerRenderWidget extends SingleChildRenderObjectWidget {
+  const _RadialWidgetPointerRenderWidget({
+    required this.value,
+    required this.radialGauge,
+    required this.isInteractive,
+    required this.onChanged,
+    required this.onTap,
+    required Widget child,
+  }) : super(child: child);
+
+  final double value;
+  final RadialGauge radialGauge;
+  final bool isInteractive;
+  final ValueChanged<double>? onChanged;
+  final VoidCallback? onTap;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
     return RenderRadialWidgetPointer(
       value: value,
-      radialGauge: scope.rGauge,
+      radialGauge: radialGauge,
       isInteractive: isInteractive,
       onChanged: onChanged,
       onTap: onTap,
@@ -66,13 +118,11 @@ class RadialWidgetPointer extends SingleChildRenderObjectWidget {
   @override
   void updateRenderObject(
       BuildContext context, RenderRadialWidgetPointer renderObject) {
-    final RadialGaugeState scope = RadialGaugeState.of(context);
     renderObject
       ..setValue = value
-      ..setRadialGauge = scope.rGauge
+      ..setRadialGauge = radialGauge
       ..setIsInteractive = isInteractive
       ..onChanged = onChanged
       ..onTap = onTap;
-    super.updateRenderObject(context, renderObject);
   }
 }

@@ -16,7 +16,7 @@ import '../radial_gauge_state.dart';
 ///    ),
 /// ```
 ///
-class RadialValueBar extends LeafRenderObjectWidget {
+class RadialValueBar extends ImplicitlyAnimatedWidget {
   ///
   /// [RadialValueBar] is used to render the value bar in the [RadialGauge].
   ///
@@ -36,7 +36,9 @@ class RadialValueBar extends LeafRenderObjectWidget {
     this.valueBarThickness = 10,
     this.gradient,
     this.radialOffset = 0,
-  }) : super(key: key);
+    Duration duration = const Duration(milliseconds: 500),
+    Curve curve = Curves.easeInOut,
+  }) : super(key: key, duration: duration, curve: curve);
 
   /// [value] denotes the value of the value bar.
   ///
@@ -124,29 +126,76 @@ class RadialValueBar extends LeafRenderObjectWidget {
   final LinearGradient? gradient;
 
   @override
-  RenderObject createRenderObject(BuildContext context) {
+  ImplicitlyAnimatedWidgetState<RadialValueBar> createState() =>
+      _RadialValueBarState();
+}
+
+class _RadialValueBarState extends AnimatedWidgetBaseState<RadialValueBar> {
+  Tween<double>? _valueTween;
+
+  @override
+  void forEachTween(TweenVisitor<dynamic> visitor) {
+    _valueTween = visitor(
+      _valueTween,
+      widget.value,
+      (dynamic value) => Tween<double>(begin: value as double),
+    ) as Tween<double>?;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
 
+    return _RadialValueBarRenderWidget(
+      value: _valueTween?.evaluate(animation) ?? widget.value,
+      color: widget.color,
+      gradient: widget.gradient ??
+          LinearGradient(colors: [widget.color, widget.color]),
+      radialOffset: widget.radialOffset,
+      valueBarThickness: widget.valueBarThickness,
+      radialGauge: scope.rGauge,
+    );
+  }
+}
+
+class _RadialValueBarRenderWidget extends LeafRenderObjectWidget {
+  const _RadialValueBarRenderWidget({
+    required this.value,
+    required this.color,
+    required this.gradient,
+    required this.radialOffset,
+    required this.valueBarThickness,
+    required this.radialGauge,
+  });
+
+  final double value;
+  final Color color;
+  final LinearGradient gradient;
+  final double radialOffset;
+  final double valueBarThickness;
+  final RadialGauge radialGauge;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
     return RenderRadialValueBar(
       value: value,
       color: color,
-      gradient: gradient ?? LinearGradient(colors: [color, color]),
+      gradient: gradient,
       radialOffset: radialOffset,
       valueBarThickness: valueBarThickness,
-      radialGauge: scope.rGauge,
+      radialGauge: radialGauge,
     );
   }
 
   @override
   void updateRenderObject(
       BuildContext context, covariant RenderRadialValueBar renderObject) {
-    final RadialGaugeState scope = RadialGaugeState.of(context);
     renderObject
       ..setValue = value
       ..setColor = color
       ..setRadialOffset = radialOffset
-      ..setLinearGradient = gradient ?? LinearGradient(colors: [color, color])
+      ..setLinearGradient = gradient
       ..setValueBarThickness = valueBarThickness
-      ..setRadialGauge = scope.rGauge;
+      ..setRadialGauge = radialGauge;
   }
 }

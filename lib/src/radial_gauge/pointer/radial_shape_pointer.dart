@@ -23,7 +23,7 @@ import 'package:geekyants_flutter_gauges/src/radial_gauge/radial_gauge_state.dar
 /// ```
 ///
 
-class RadialShapePointer extends LeafRenderObjectWidget {
+class RadialShapePointer extends ImplicitlyAnimatedWidget {
   /// [RadialShapePointer] is used to render the shape pointer in the [RadialGauge].
   ///
   /// Currently Only Supports Circle Shape Pointers.
@@ -37,7 +37,9 @@ class RadialShapePointer extends LeafRenderObjectWidget {
     this.onChanged,
     this.isInteractive = false,
     this.shape = PointerShape.triangle,
-  });
+    Duration duration = const Duration(milliseconds: 500),
+    Curve curve = Curves.easeInOut,
+  }) : super(duration: duration, curve: curve);
 
   ///
   /// `value` sets the value of the [RadialShapePointer] on the [RadialGauge]
@@ -84,9 +86,63 @@ class RadialShapePointer extends LeafRenderObjectWidget {
   final PointerShape shape;
 
   @override
-  RenderObject createRenderObject(BuildContext context) {
+  ImplicitlyAnimatedWidgetState<RadialShapePointer> createState() =>
+      _RadialShapePointerState();
+}
+
+class _RadialShapePointerState
+    extends AnimatedWidgetBaseState<RadialShapePointer> {
+  Tween<double>? _valueTween;
+
+  @override
+  void forEachTween(TweenVisitor<dynamic> visitor) {
+    _valueTween = visitor(
+      _valueTween,
+      widget.value,
+      (dynamic value) => Tween<double>(begin: value as double),
+    ) as Tween<double>?;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
 
+    return _RadialShapePointerRenderWidget(
+      value: _valueTween?.evaluate(animation) ?? widget.value,
+      color: widget.color,
+      height: widget.height,
+      width: widget.width,
+      isInteractive: widget.isInteractive,
+      onChanged: widget.onChanged,
+      shape: widget.shape,
+      radialGauge: scope.rGauge,
+    );
+  }
+}
+
+class _RadialShapePointerRenderWidget extends LeafRenderObjectWidget {
+  const _RadialShapePointerRenderWidget({
+    required this.value,
+    required this.color,
+    required this.height,
+    required this.width,
+    required this.isInteractive,
+    required this.onChanged,
+    required this.shape,
+    required this.radialGauge,
+  });
+
+  final double value;
+  final Color color;
+  final double height;
+  final double width;
+  final bool isInteractive;
+  final ValueChanged<double>? onChanged;
+  final PointerShape shape;
+  final RadialGauge radialGauge;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
     return RenderRadialShapePointer(
       value: value,
       color: color,
@@ -95,17 +151,16 @@ class RadialShapePointer extends LeafRenderObjectWidget {
       isInteractive: isInteractive,
       onChanged: onChanged,
       shape: shape,
-      radialGauge: scope.rGauge,
+      radialGauge: radialGauge,
     );
   }
 
   @override
   void updateRenderObject(
       BuildContext context, RenderRadialShapePointer renderObject) {
-    final RadialGaugeState scope = RadialGaugeState.of(context);
     renderObject
       ..setValue = value
-      ..setRadialGauge = scope.rGauge
+      ..setRadialGauge = radialGauge
       ..setColor = color
       ..setHeight = height
       ..setWidth = width

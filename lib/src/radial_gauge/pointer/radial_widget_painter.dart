@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/rendering.dart';
 import '../../../geekyants_flutter_gauges.dart';
+import '../utils/radial_gauge_math.dart';
 
 class RenderRadialWidgetPointer extends RenderProxyBox {
   RenderRadialWidgetPointer({
@@ -79,42 +80,15 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    if (child == null) return;
+    final RenderBox? pointerChild = child;
+    if (pointerChild == null) return;
 
-    double gaugeStart = _radialGauge.track.start;
-    double gaugeEnd = _radialGauge.track.end;
+    final Offset pointerPosition = _resolvePointerPosition();
+    final Offset childHalfSize =
+        Offset(pointerChild.size.width / 2, pointerChild.size.height / 2);
+    final Offset childCenterOffset = offset + pointerPosition - childHalfSize;
 
-    // Use the exact same center calculation as the shape pointer
-    final center = Offset(
-        size.width * _radialGauge.xCenterCoordinate + offset.dx,
-        size.height * _radialGauge.yCenterCoordinate + offset.dy);
-
-    double value = calculateValueAngle(_value, gaugeStart, gaugeEnd);
-    double startAngle = (_radialGauge.track.startAngle - 180) * (pi / 180);
-    double endAngle = (_radialGauge.track.endAngle - 180) * (pi / 180);
-
-    final double angle = startAngle + (value / 100) * (endAngle - startAngle);
-
-    // Calculate radius to match the center of the value bar
-    // This matches the RadialValueBar calculation: (size.shortestSide / 2.0 - track.thickness) * radiusFactor
-    double circlePointerOffset =
-        (size.shortestSide / 2.0 - _radialGauge.track.thickness) *
-            _radialGauge.radiusFactor;
-
-    double circlePointerEndX = center.dx + circlePointerOffset * cos(angle);
-    double circlePointerEndY = center.dy + circlePointerOffset * sin(angle);
-
-    // Center the child widget at the pointer position
-    final childCenterOffset = Offset(circlePointerEndX - child!.size.width / 2,
-        circlePointerEndY - child!.size.height / 2);
-
-    // Save the canvas state, translate to the correct position, and paint the child
-    context.paintChild(child!, childCenterOffset);
-  }
-
-  double calculateValueAngle(double value, double gaugeStart, double gaugeEnd) {
-    double newValue = (value - gaugeStart) / (gaugeEnd - gaugeStart) * 100;
-    return newValue;
+    context.paintChild(pointerChild, childCenterOffset);
   }
 
   VoidCallback? get onTap => _onTap;
@@ -126,41 +100,16 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (child == null) return false;
+    final RenderBox? pointerChild = child;
+    if (pointerChild == null) return false;
 
-    // Recalculate the child's painted offset (same math as paint)
-    double gaugeStart = _radialGauge.track.start;
-    double gaugeEnd = _radialGauge.track.end;
+    final Offset pointerPosition = _resolvePointerPosition();
+    final Offset childHalfSize =
+        Offset(pointerChild.size.width / 2, pointerChild.size.height / 2);
+    final Offset childOrigin = pointerPosition - childHalfSize;
+    final Offset localChildPos = position - childOrigin;
 
-    final center = Offset(
-      size.width * _radialGauge.xCenterCoordinate,
-      size.height * _radialGauge.yCenterCoordinate,
-    );
-
-    double value = calculateValueAngle(_value, gaugeStart, gaugeEnd);
-    double startAngle = (_radialGauge.track.startAngle - 180) * (pi / 180);
-    double endAngle = (_radialGauge.track.endAngle - 180) * (pi / 180);
-
-    final double angle = startAngle + (value / 100) * (endAngle - startAngle);
-
-    double circlePointerOffset =
-        (size.shortestSide / 2.0 - _radialGauge.track.thickness) *
-            _radialGauge.radiusFactor;
-
-    double circlePointerEndX = center.dx + circlePointerOffset * cos(angle);
-    double circlePointerEndY = center.dy + circlePointerOffset * sin(angle);
-
-    final childCenterOffset = Offset(
-      circlePointerEndX - child!.size.width / 2,
-      circlePointerEndY - child!.size.height / 2,
-    );
-
-    // Convert position into child's local coordinate system
-    final Offset localChildPos = position - childCenterOffset;
-
-    // Delegate hit testing to the child at its local coordinates.
-    if (child!.hitTest(result, position: localChildPos)) {
-      // add an entry for this render object so handleEvent is called on it
+    if (pointerChild.hitTest(result, position: localChildPos)) {
       result.add(BoxHitTestEntry(this, position));
       return true;
     }
@@ -177,5 +126,33 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
       }
     }
     // Don’t forward to super if you don’t want child gestures at all
+  }
+
+  Offset _resolvePointerPosition() {
+    final double gaugeStart = _radialGauge.track.start;
+    final double gaugeEnd = _radialGauge.track.end;
+    final double normalizedValue = normalizeGaugeValue(
+      _value,
+      gaugeStart,
+      gaugeEnd,
+    );
+
+    final double startAngle =
+        (_radialGauge.track.startAngle - 180) * (pi / 180);
+    final double endAngle = (_radialGauge.track.endAngle - 180) * (pi / 180);
+    final double angle =
+        startAngle + normalizedValue * (endAngle - startAngle);
+
+    final double pointerRadius =
+        (size.shortestSide / 2.0 - _radialGauge.track.thickness) *
+            _radialGauge.radiusFactor;
+
+    final double centerX = size.width * _radialGauge.xCenterCoordinate;
+    final double centerY = size.height * _radialGauge.yCenterCoordinate;
+
+    return Offset(
+      centerX + pointerRadius * cos(angle),
+      centerY + pointerRadius * sin(angle),
+    );
   }
 }

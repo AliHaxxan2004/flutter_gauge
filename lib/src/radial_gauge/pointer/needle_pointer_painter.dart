@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import '../../../geekyants_flutter_gauges.dart';
+import '../utils/radial_gauge_math.dart';
 
 class RenderNeedlePointer extends RenderBox {
   RenderNeedlePointer({
@@ -180,7 +181,8 @@ class RenderNeedlePointer extends RenderBox {
     double gaugeStart = _radialGauge!.track.start;
     double gaugeEnd = _radialGauge!.track.end;
 
-    double value = calculateValueAngle(_value, gaugeStart, gaugeEnd);
+    final double normalizedValue =
+        normalizeGaugeValue(_value, gaugeStart, gaugeEnd);
     double startAngle = (_radialGauge!.track.startAngle - 180) * (pi / 180);
     double endAngle = (_radialGauge!.track.endAngle - 180) * (pi / 180);
 
@@ -189,7 +191,8 @@ class RenderNeedlePointer extends RenderBox {
 
     final double needleMultiplier = _needleHeight.clamp(0, maxH);
 
-    final double angle = startAngle + (value / 100) * (endAngle - startAngle);
+    final double angle =
+        startAngle + normalizedValue * (endAngle - startAngle);
 
     double needleEndX =
         center.dx + needleMultiplier * cos(angle) - _needleWidth;
@@ -239,12 +242,6 @@ class RenderNeedlePointer extends RenderBox {
           Offset(needleEndX, needleEndY), needlePaint);
       canvas.drawPath(circlePath, Paint()..color = _tailColor);
     }
-  }
-
-  double calculateValueAngle(double value, double gaugeStart, double gaugeEnd) {
-    double newValue = (value - gaugeStart) / (gaugeEnd - gaugeStart) * 100;
-
-    return newValue;
   }
 }
 

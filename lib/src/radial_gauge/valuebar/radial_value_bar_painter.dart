@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/rendering.dart';
 import '../../../geekyants_flutter_gauges.dart';
+import '../utils/radial_gauge_math.dart';
 
 class RenderRadialValueBar extends RenderBox {
   RenderRadialValueBar({
@@ -89,15 +90,21 @@ class RenderRadialValueBar extends RenderBox {
     final LinearGradient gradient = getLinearGradient;
 
     // Angles in radians
-    double startAngle = (getRadialGauge.track.startAngle - 180) * (pi / 180);
-    double endAngle = (getRadialGauge.track.endAngle - 180) * (pi / 180);
+    double trackStartAngle =
+        (getRadialGauge.track.startAngle - 180) * (pi / 180);
+    double trackEndAngle =
+        (getRadialGauge.track.endAngle - 180) * (pi / 180);
 
-    double value = (_value - getRadialGauge.track.start) /
-        (getRadialGauge.track.end - getRadialGauge.track.start) *
-        100;
+    final double normalizedValue = normalizeGaugeValue(
+      _value,
+      getRadialGauge.track.start,
+      getRadialGauge.track.end,
+    );
+    final double angle = trackStartAngle +
+        normalizedValue * (trackEndAngle - trackStartAngle);
 
-    final double angle = startAngle + (value / 100) * (endAngle - startAngle);
-    endAngle = angle;
+    double startAngle = trackStartAngle;
+    double endAngle = angle;
 
     if (startAngle > endAngle) {
       final double temp = startAngle;

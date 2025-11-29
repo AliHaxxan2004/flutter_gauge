@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../geekyants_flutter_gauges.dart';
+import '../utils/radial_gauge_math.dart';
 
 class RenderRadialShapePointer extends RenderBox {
   RenderRadialShapePointer({
@@ -138,11 +139,13 @@ class RenderRadialShapePointer extends RenderBox {
         size.width * _radialGauge.xCenterCoordinate + offset.dx,
         size.height * _radialGauge.yCenterCoordinate + offset.dy);
 
-    double value = calculateValueAngle(_value, gaugeStart, gaugeEnd);
+    final double normalizedValue =
+        normalizeGaugeValue(_value, gaugeStart, gaugeEnd);
     double startAngle = (_radialGauge.track.startAngle - 180) * (pi / 180);
     double endAngle = (_radialGauge.track.endAngle - 180) * (pi / 180);
 
-    final double angle = startAngle + (value / 100) * (endAngle - startAngle);
+    final double angle =
+        startAngle + normalizedValue * (endAngle - startAngle);
 
     double needleLength = 30;
     double needleWidth = 10;
@@ -185,11 +188,5 @@ class RenderRadialShapePointer extends RenderBox {
     canvas.drawCircle(Offset(circlePointerEndX, circlePointerEndY), _width,
         Paint()..color = _color);
     // canvas.drawPath(pointerPath, Paint()..color = _color);
-  }
-
-  double calculateValueAngle(double value, double gaugeStart, double gaugeEnd) {
-    double newValue = (value - gaugeStart) / (gaugeEnd - gaugeStart) * 100;
-
-    return newValue;
   }
 }

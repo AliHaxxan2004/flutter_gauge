@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'package:geekyants_flutter_gauges/src/radial_gauge/pointer/radial_widget_painter.dart';
@@ -71,6 +72,8 @@ class _RadialWidgetPointerState
     extends AnimatedWidgetBaseState<RadialWidgetPointer> {
   Tween<double>? _valueTween;
   bool _isFirstBuild = true;
+  ValueListenable<double>? _valueBarProgressListenable;
+  double? _latestValueBarProgress;
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
@@ -88,11 +91,58 @@ class _RadialWidgetPointerState
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _subscribeToValueBarProgress();
+  }
+
+  @override
+  void didUpdateWidget(covariant RadialWidgetPointer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _subscribeToValueBarProgress();
+  }
+
+  @override
+  void dispose() {
+    _valueBarProgressListenable?.removeListener(_onValueBarProgressChanged);
+    super.dispose();
+  }
+
+  void _subscribeToValueBarProgress() {
+    final RadialGaugeState scope = RadialGaugeState.of(context);
+    final ValueListenable<double>? listenable =
+        scope.valueBarAnimationProgress;
+    if (_valueBarProgressListenable == listenable) {
+      return;
+    }
+
+    _valueBarProgressListenable
+        ?.removeListener(_onValueBarProgressChanged);
+    _valueBarProgressListenable = listenable;
+    _latestValueBarProgress = listenable?.value;
+    _valueBarProgressListenable
+        ?.addListener(_onValueBarProgressChanged);
+  }
+
+  void _onValueBarProgressChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(
+      () => _latestValueBarProgress =
+          _valueBarProgressListenable?.value,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
+    final double? progressValue =
+        _latestValueBarProgress ?? scope.valueBarAnimationProgress?.value;
 
     return _RadialWidgetPointerRenderWidget(
       value: _valueTween?.evaluate(animation) ?? widget.value,
+      valueBarProgress: progressValue,
       radialGauge: scope.rGauge,
       isInteractive: widget.isInteractive,
       onChanged: widget.onChanged,
@@ -105,6 +155,7 @@ class _RadialWidgetPointerState
 class _RadialWidgetPointerRenderWidget extends SingleChildRenderObjectWidget {
   const _RadialWidgetPointerRenderWidget({
     required this.value,
+    required this.valueBarProgress,
     required this.radialGauge,
     required this.isInteractive,
     required this.onChanged,
@@ -113,6 +164,7 @@ class _RadialWidgetPointerRenderWidget extends SingleChildRenderObjectWidget {
   }) : super(child: child);
 
   final double value;
+  final double? valueBarProgress;
   final RadialGauge radialGauge;
   final bool isInteractive;
   final ValueChanged<double>? onChanged;
@@ -122,6 +174,7 @@ class _RadialWidgetPointerRenderWidget extends SingleChildRenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) {
     return RenderRadialWidgetPointer(
       value: value,
+      valueBarProgress: valueBarProgress,
       radialGauge: radialGauge,
       isInteractive: isInteractive,
       onChanged: onChanged,
@@ -134,6 +187,7 @@ class _RadialWidgetPointerRenderWidget extends SingleChildRenderObjectWidget {
       BuildContext context, RenderRadialWidgetPointer renderObject) {
     renderObject
       ..setValue = value
+      ..valueBarProgress = valueBarProgress
       ..setRadialGauge = radialGauge
       ..setIsInteractive = isInteractive
       ..onChanged = onChanged

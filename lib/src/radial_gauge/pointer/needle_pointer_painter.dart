@@ -18,6 +18,7 @@ class RenderNeedlePointer extends RenderBox {
     required bool isInteractive,
     required Color tailColor,
     required LinearGradient gradient,
+    required double? valueBarProgress,
 
     // required RadialTrack track,
   })  : _value = value,
@@ -31,6 +32,7 @@ class RenderNeedlePointer extends RenderBox {
         _needleStyle = needleStyle,
         _isInteractive = isInteractive,
         _needleWidth = needleWidth,
+        _valueBarProgress = valueBarProgress,
         super();
 
   LinearGradient get getGradient => _gradient;
@@ -142,6 +144,15 @@ class RenderNeedlePointer extends RenderBox {
     markNeedsLayout();
   }
 
+  double? _valueBarProgress;
+  set valueBarProgress(double? progress) {
+    if (_valueBarProgress == progress) {
+      return;
+    }
+    _valueBarProgress = progress;
+    markNeedsPaint();
+  }
+
   @override
   bool hitTestSelf(Offset position) {
     Offset calulatedPosition = localToGlobal(position);
@@ -165,9 +176,32 @@ class RenderNeedlePointer extends RenderBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    final canvas = context.canvas;
-    offset = Offset(size.width * getRadialGauge.xCenterCoordinate + offset.dx,
-        size.height * getRadialGauge.yCenterCoordinate + offset.dy);
+    final double visibility = _visibilityFactor;
+    if (visibility <= 0) {
+      return;
+    }
+
+    final Canvas canvas = context.canvas;
+    final Rect layerBounds = offset & size;
+    final Offset translatedOffset =
+        Offset(size.width * getRadialGauge.xCenterCoordinate + offset.dx,
+            size.height * getRadialGauge.yCenterCoordinate + offset.dy);
+
+    final bool needsFadeLayer = visibility < 1;
+    if (needsFadeLayer) {
+      final Paint fadePaint =
+          Paint()..color = Color.fromRGBO(255, 255, 255, visibility);
+      canvas.saveLayer(layerBounds, fadePaint);
+    }
+
+    _paintNeedle(canvas, translatedOffset);
+
+    if (needsFadeLayer) {
+      canvas.restore();
+    }
+  }
+
+  void _paintNeedle(Canvas canvas, Offset offset) {
     final center = Offset(offset.dx + _needleWidth, offset.dy + _needleHeight);
 
     Rect circle = Rect.fromLTWH(offset.dx - getTailRadius / 2,
@@ -231,7 +265,6 @@ class RenderNeedlePointer extends RenderBox {
     needlePath.close();
 
     needlePointerRect = needlePath;
-    // canvas.drawPath(needlePath, Paint()..color = Colors.green);
 // Needle  Pointer paint
     if (getNeedleStyle == NeedleStyle.gaugeNeedle) {
       canvas.drawPath(needlePath, needlePaint);
@@ -242,6 +275,28 @@ class RenderNeedlePointer extends RenderBox {
           Offset(needleEndX, needleEndY), needlePaint);
       canvas.drawPath(circlePath, Paint()..color = _tailColor);
     }
+  }
+
+  double get _visibilityFactor {
+    final double? progress = _valueBarProgress;
+
+    if (progress == null) {
+      return 1.0;
+    }
+
+    if (progress < _value) {
+      return 0.0;
+    }
+
+    final double span =
+        (_radialGauge!.track.end - _radialGauge!.track.start).abs();
+    final double fadeSpan = span == 0 ? 1.0 : span * 0.05;
+    if (fadeSpan <= 0) {
+      return 1.0;
+    }
+
+    final double delta = progress - _value;
+    return (delta / fadeSpan).clamp(0.0, 1.0);
   }
 }
 

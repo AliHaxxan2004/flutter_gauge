@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/src/radial_gauge/pointer/needle_pointer.dart';
 import 'package:geekyants_flutter_gauges/src/radial_gauge/radial_gauge.dart';
@@ -10,11 +11,17 @@ class RadialGaugeState extends InheritedWidget {
     required this.track,
     required this.rGauge,
     this.needlePointer,
+    this.valueBarAnimationProgress,
+    this.reportValueBarProgress,
+    this.removeValueBarProgress,
   }) : super(key: key, child: child);
 
   final RadialGauge rGauge;
   final RadialTrack track;
   final NeedlePointer? needlePointer;
+  final ValueListenable<double>? valueBarAnimationProgress;
+  final void Function(Object identifier, double progress)? reportValueBarProgress;
+  final void Function(Object identifier)? removeValueBarProgress;
 
 // Radial Gauge scoppe method
   static RadialGaugeState of(BuildContext context) {

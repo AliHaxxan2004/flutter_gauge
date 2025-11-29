@@ -36,7 +36,7 @@ class RadialValueBar extends ImplicitlyAnimatedWidget {
     this.valueBarThickness = 10,
     this.gradient,
     this.radialOffset = 0,
-    Duration duration = const Duration(milliseconds: 500),
+    Duration duration = const Duration(milliseconds: 1000),
     Curve curve = Curves.easeInOut,
   }) : super(key: key, duration: duration, curve: curve);
 

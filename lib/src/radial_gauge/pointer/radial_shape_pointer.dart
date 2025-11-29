@@ -37,7 +37,7 @@ class RadialShapePointer extends ImplicitlyAnimatedWidget {
     this.onChanged,
     this.isInteractive = false,
     this.shape = PointerShape.triangle,
-    Duration duration = const Duration(milliseconds: 500),
+    Duration duration = const Duration(milliseconds: 1000),
     Curve curve = Curves.easeInOut,
   }) : super(duration: duration, curve: curve);
 

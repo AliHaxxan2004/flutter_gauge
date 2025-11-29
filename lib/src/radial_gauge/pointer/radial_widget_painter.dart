@@ -81,8 +81,6 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
   void paint(PaintingContext context, Offset offset) {
     if (child == null) return;
 
-    final canvas = context.canvas;
-
     double gaugeStart = _radialGauge.track.start;
     double gaugeEnd = _radialGauge.track.end;
 
@@ -97,9 +95,11 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
     final double angle = startAngle + (value / 100) * (endAngle - startAngle);
 
-    // Use the exact same offset calculation as the shape pointer
+    // Calculate radius to match the center of the value bar
+    // This matches the RadialValueBar calculation: (size.shortestSide / 2.0 - track.thickness) * radiusFactor
     double circlePointerOffset =
-        (size.shortestSide / 2) * _radialGauge.radiusFactor;
+        (size.shortestSide / 2.0 - _radialGauge.track.thickness) *
+            _radialGauge.radiusFactor;
 
     double circlePointerEndX = center.dx + circlePointerOffset * cos(angle);
     double circlePointerEndY = center.dy + circlePointerOffset * sin(angle);
@@ -144,7 +144,8 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     final double angle = startAngle + (value / 100) * (endAngle - startAngle);
 
     double circlePointerOffset =
-        (size.shortestSide / 2) * _radialGauge.radiusFactor;
+        (size.shortestSide / 2.0 - _radialGauge.track.thickness) *
+            _radialGauge.radiusFactor;
 
     double circlePointerEndX = center.dx + circlePointerOffset * cos(angle);
     double circlePointerEndY = center.dy + circlePointerOffset * sin(angle);

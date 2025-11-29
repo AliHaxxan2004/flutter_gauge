@@ -28,7 +28,7 @@ class RadialWidgetPointer extends ImplicitlyAnimatedWidget {
     this.isInteractive = false,
     this.onChanged,
     this.onTap,
-    Duration duration = const Duration(milliseconds: 500),
+    Duration duration = const Duration(milliseconds: 1000),
     Curve curve = Curves.easeInOut,
   }) : super(key: key, duration: duration, curve: curve);
 

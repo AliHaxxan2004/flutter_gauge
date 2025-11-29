@@ -37,6 +37,7 @@ class RadialShapePointer extends ImplicitlyAnimatedWidget {
     this.onChanged,
     this.isInteractive = false,
     this.shape = PointerShape.triangle,
+    this.initialAnimationFrom,
     Duration duration = const Duration(milliseconds: 1000),
     Curve curve = Curves.easeInOut,
   }) : super(duration: duration, curve: curve);
@@ -85,6 +86,12 @@ class RadialShapePointer extends ImplicitlyAnimatedWidget {
   ///
   final PointerShape shape;
 
+  /// [initialAnimationFrom] specifies the starting value for the initial animation.
+  ///
+  /// If null, no initial animation occurs.
+  /// If set, the pointer will animate from this value to the current value when first rendered.
+  final double? initialAnimationFrom;
+
   @override
   ImplicitlyAnimatedWidgetState<RadialShapePointer> createState() =>
       _RadialShapePointerState();
@@ -93,14 +100,21 @@ class RadialShapePointer extends ImplicitlyAnimatedWidget {
 class _RadialShapePointerState
     extends AnimatedWidgetBaseState<RadialShapePointer> {
   Tween<double>? _valueTween;
+  bool _isFirstBuild = true;
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
+    final beginValue = _isFirstBuild && widget.initialAnimationFrom != null
+        ? widget.initialAnimationFrom!
+        : widget.value;
+
     _valueTween = visitor(
       _valueTween,
       widget.value,
-      (dynamic value) => Tween<double>(begin: value as double),
+      (dynamic value) => Tween<double>(begin: beginValue),
     ) as Tween<double>?;
+
+    _isFirstBuild = false;
   }
 
   @override

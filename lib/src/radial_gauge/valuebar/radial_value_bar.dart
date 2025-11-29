@@ -36,6 +36,7 @@ class RadialValueBar extends ImplicitlyAnimatedWidget {
     this.valueBarThickness = 10,
     this.gradient,
     this.radialOffset = 0,
+    this.initialAnimationFrom,
     Duration duration = const Duration(milliseconds: 1000),
     Curve curve = Curves.easeInOut,
   }) : super(key: key, duration: duration, curve: curve);
@@ -125,6 +126,20 @@ class RadialValueBar extends ImplicitlyAnimatedWidget {
   ///
   final LinearGradient? gradient;
 
+  /// [initialAnimationFrom] specifies the starting value for the initial animation.
+  ///
+  /// If null, no initial animation occurs.
+  /// If set (e.g., 0 or track.end), the value bar will animate from this value
+  /// to the current value when first rendered.
+  ///
+  /// ```dart
+  /// RadialValueBar(
+  ///   value: 75,
+  ///   initialAnimationFrom: 0, // Animates from 0 to 75 on first render
+  /// )
+  /// ```
+  final double? initialAnimationFrom;
+
   @override
   ImplicitlyAnimatedWidgetState<RadialValueBar> createState() =>
       _RadialValueBarState();
@@ -132,14 +147,21 @@ class RadialValueBar extends ImplicitlyAnimatedWidget {
 
 class _RadialValueBarState extends AnimatedWidgetBaseState<RadialValueBar> {
   Tween<double>? _valueTween;
+  bool _isFirstBuild = true;
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
+    final beginValue = _isFirstBuild && widget.initialAnimationFrom != null
+        ? widget.initialAnimationFrom!
+        : widget.value;
+
     _valueTween = visitor(
       _valueTween,
       widget.value,
-      (dynamic value) => Tween<double>(begin: value as double),
+      (dynamic value) => Tween<double>(begin: beginValue),
     ) as Tween<double>?;
+
+    _isFirstBuild = false;
   }
 
   @override

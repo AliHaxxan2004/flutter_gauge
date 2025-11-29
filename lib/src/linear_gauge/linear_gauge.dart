@@ -413,7 +413,8 @@ class LinearGauge extends StatefulWidget {
   State<LinearGauge> createState() => _LinearGauge();
 }
 
-class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
+class _LinearGauge extends State<LinearGauge>
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   AnimationController? _gaugeAnimationController;
   Animation<double>? _gaugeAnimation;
   List<ValueBar>? _oldValueBarList;
@@ -427,6 +428,9 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
 
   bool isPointerAndValuebarAnimationStarted = false;
   bool _hasCompletedInitialAnimation = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -443,6 +447,7 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
         !_isEqualLists(widget.valueBar, _oldValueBarList) ||
         !_isEqualLists(widget.pointers, _oldPointerList)) {
       isPointerAndValuebarAnimationStarted = false;
+      _hasCompletedInitialAnimation = false;
 
       _updateOldValueList();
       _initializeAnimations();
@@ -474,6 +479,29 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
           oldList[i].animationDuration != newList[i].animationDuration ||
           oldList[i].animationType != newList[i].animationType) {
         return false;
+      }
+
+      if (oldList[i] is ValueBar && newList[i] is ValueBar) {
+        if (oldList[i].value != newList[i].value ||
+            oldList[i].position != newList[i].position) {
+          return false;
+        }
+      } else if (oldList[i] is BasePointer && newList[i] is BasePointer) {
+        if (oldList[i].value != newList[i].value ||
+            oldList[i].pointerPosition != newList[i].pointerPosition) {
+          return false;
+        }
+      }
+      if (oldList[i] is BasePointer && newList[i] is BasePointer) {
+        if (oldList[i].pointerAlignment != newList[i].pointerAlignment) {
+          return false;
+        }
+      }
+      if (oldList[i] is ValueBar && newList[i] is ValueBar) {
+        if (oldList[i].offset != newList[i].offset ||
+            oldList[i].valueBarThickness != newList[i].valueBarThickness) {
+          return false;
+        }
       }
     }
 
@@ -720,6 +748,7 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return _RLinearGauge(
       lGauge: widget,
       children: _buildChildWidgets(context),

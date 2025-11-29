@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'package:geekyants_flutter_gauges/src/linear_gauge/curve/custom_curve_painter.dart';
@@ -529,23 +531,47 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
 
   /// Animates the gauge elements.
   void _animateElements() {
-    if (widget.enableGaugeAnimation) {
-      _gaugeAnimationController!.forward(from: 0);
-    } else {
-      _animatePointers();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      if (widget.enableGaugeAnimation) {
+        _gaugeAnimationController!.forward(from: 0);
+      } else {
+        _animatePointers();
+      }
+    });
   }
 
   void _animatePointers() {
-    if (_pointerAnimationControllers.isNotEmpty) {
-      for (int i = 0; i < _pointerAnimationControllers.length; i++) {
-        _pointerAnimationControllers[i].forward(from: 0);
+    final List<Future<void>> valueBarFutures = <Future<void>>[];
+
+    if (_valueBarAnimationControllers.isNotEmpty) {
+      for (final AnimationController controller
+          in _valueBarAnimationControllers) {
+        valueBarFutures.add(controller.forward(from: 0));
       }
     }
-    if (_valueBarAnimationControllers.isNotEmpty) {
-      for (int i = 0; i < _valueBarAnimationControllers.length; i++) {
-        _valueBarAnimationControllers[i].forward(from: 0);
-      }
+
+    if (valueBarFutures.isEmpty) {
+      _startPointerAnimations();
+    } else {
+      Future.wait(valueBarFutures).whenComplete(() {
+        if (!mounted) {
+          return;
+        }
+        _startPointerAnimations();
+      });
+    }
+  }
+
+  void _startPointerAnimations() {
+    if (_pointerAnimationControllers.isEmpty) {
+      return;
+    }
+
+    for (final AnimationController controller in _pointerAnimationControllers) {
+      controller.forward(from: 0);
     }
   }
 

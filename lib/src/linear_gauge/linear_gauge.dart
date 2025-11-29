@@ -426,6 +426,7 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
   late List<Widget> _linearGaugeWidgets;
 
   bool isPointerAndValuebarAnimationStarted = false;
+  bool _hasCompletedInitialAnimation = false;
 
   @override
   void initState() {
@@ -525,12 +526,44 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
     if (!isPointerAndValuebarAnimationStarted &&
         _gaugeAnimationController!.value >= widget.animationGap) {
       isPointerAndValuebarAnimationStarted = true;
-      _animatePointers();
+      unawaited(_animatePointers());
+    }
+  }
+
+  void _markInitialAnimationComplete() {
+    if (_hasCompletedInitialAnimation) {
+      return;
+    }
+    _hasCompletedInitialAnimation = true;
+  }
+
+  void _jumpToAnimationEnd() {
+    if (_gaugeAnimationController != null &&
+        _gaugeAnimationController!.value != 1) {
+      _gaugeAnimationController!.value = 1;
+    }
+
+    for (final AnimationController controller
+        in _valueBarAnimationControllers) {
+      if (controller.value != 1) {
+        controller.value = 1;
+      }
+    }
+
+    for (final AnimationController controller in _pointerAnimationControllers) {
+      if (controller.value != 1) {
+        controller.value = 1;
+      }
     }
   }
 
   /// Animates the gauge elements.
   void _animateElements() {
+    if (_hasCompletedInitialAnimation) {
+      _jumpToAnimationEnd();
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -538,40 +571,36 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
       if (widget.enableGaugeAnimation) {
         _gaugeAnimationController!.forward(from: 0);
       } else {
-        _animatePointers();
+        unawaited(_animatePointers());
       }
     });
   }
 
-  void _animatePointers() {
-    final List<Future<void>> valueBarFutures = <Future<void>>[];
-
+  Future<void> _animatePointers() async {
     if (_valueBarAnimationControllers.isNotEmpty) {
-      for (final AnimationController controller
-          in _valueBarAnimationControllers) {
-        valueBarFutures.add(controller.forward(from: 0));
-      }
+      await Future.wait(
+        _valueBarAnimationControllers
+            .map((AnimationController controller) =>
+                controller.forward(from: 0)),
+        eagerError: true,
+      );
     }
 
-    if (valueBarFutures.isEmpty) {
-      _startPointerAnimations();
-    } else {
-      Future.wait(valueBarFutures).whenComplete(() {
-        if (!mounted) {
-          return;
-        }
-        _startPointerAnimations();
-      });
-    }
-  }
-
-  void _startPointerAnimations() {
-    if (_pointerAnimationControllers.isEmpty) {
+    if (!mounted) {
       return;
     }
 
-    for (final AnimationController controller in _pointerAnimationControllers) {
-      controller.forward(from: 0);
+    if (_pointerAnimationControllers.isNotEmpty) {
+      await Future.wait(
+        _pointerAnimationControllers
+            .map((AnimationController controller) =>
+                controller.forward(from: 0)),
+        eagerError: true,
+      );
+    }
+
+    if (mounted) {
+      _markInitialAnimationComplete();
     }
   }
 

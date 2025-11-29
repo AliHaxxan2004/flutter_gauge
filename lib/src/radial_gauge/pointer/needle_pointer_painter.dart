@@ -18,6 +18,7 @@ class RenderNeedlePointer extends RenderBox {
     required bool isInteractive,
     required Color tailColor,
     required LinearGradient gradient,
+    required bool isVisible,
 
     // required RadialTrack track,
   })  : _value = value,
@@ -31,6 +32,7 @@ class RenderNeedlePointer extends RenderBox {
         _needleStyle = needleStyle,
         _isInteractive = isInteractive,
         _needleWidth = needleWidth,
+        _isVisible = isVisible,
         super();
 
   LinearGradient get getGradient => _gradient;
@@ -78,6 +80,17 @@ class RenderNeedlePointer extends RenderBox {
   // Gets the Interaction assigned to [RenderNeedlePointer].
   bool get isInteractive => _isInteractive;
   bool _isInteractive;
+
+  bool get isVisible => _isVisible;
+  bool _isVisible;
+  set setIsVisible(bool value) {
+    if (_isVisible == value) {
+      return;
+    }
+    _isVisible = value;
+    markNeedsPaint();
+    markNeedsLayout();
+  }
 
   NeedleStyle get getNeedleStyle => _needleStyle;
   NeedleStyle _needleStyle;
@@ -144,6 +157,9 @@ class RenderNeedlePointer extends RenderBox {
 
   @override
   bool hitTestSelf(Offset position) {
+    if (!_isVisible) {
+      return false;
+    }
     Offset calulatedPosition = localToGlobal(position);
     if (needlePointerRect.contains(calulatedPosition)) {
       return true;
@@ -165,6 +181,9 @@ class RenderNeedlePointer extends RenderBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
+    if (!_isVisible) {
+      return;
+    }
     final canvas = context.canvas;
     offset = Offset(size.width * getRadialGauge.xCenterCoordinate + offset.dx,
         size.height * getRadialGauge.yCenterCoordinate + offset.dy);

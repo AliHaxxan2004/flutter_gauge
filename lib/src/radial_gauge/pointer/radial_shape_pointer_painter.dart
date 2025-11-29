@@ -15,6 +15,7 @@ class RenderRadialShapePointer extends RenderBox {
     required bool isInteractive,
     required PointerShape shape,
     required RadialGauge radialGauge,
+    required bool isVisible,
   })  : _value = value,
         _color = color,
         _height = height,
@@ -22,7 +23,8 @@ class RenderRadialShapePointer extends RenderBox {
         _isInteractive = isInteractive,
         _width = width,
         _shape = shape,
-        _radialGauge = radialGauge;
+        _radialGauge = radialGauge,
+        _isVisible = isVisible;
 
   double _value;
   Color _color;
@@ -30,6 +32,7 @@ class RenderRadialShapePointer extends RenderBox {
   double _width;
   PointerShape _shape;
   RadialGauge _radialGauge;
+  bool _isVisible;
 
   @override
   Size computeDryLayout(BoxConstraints constraints) {
@@ -43,6 +46,9 @@ class RenderRadialShapePointer extends RenderBox {
 
   @override
   bool hitTestSelf(Offset position) {
+    if (!_isVisible) {
+      return false;
+    }
     Offset calculatedPosition = localToGlobal(position);
 
     if (pointerRect.contains(calculatedPosition)) {
@@ -125,10 +131,21 @@ class RenderRadialShapePointer extends RenderBox {
     markNeedsPaint();
   }
 
+  set setIsVisible(bool value) {
+    if (_isVisible == value) {
+      return;
+    }
+    _isVisible = value;
+    markNeedsPaint();
+  }
+
   late Rect pointerRect;
 
   @override
   void paint(PaintingContext context, Offset offset) {
+    if (!_isVisible) {
+      return;
+    }
     final canvas = context.canvas;
 
     double gaugeStart = _radialGauge.track.start;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'package:geekyants_flutter_gauges/src/radial_gauge/pointer/radial_shape_pointer_painter.dart';
@@ -101,6 +103,27 @@ class _RadialShapePointerState
     extends AnimatedWidgetBaseState<RadialShapePointer> {
   Tween<double>? _valueTween;
   bool _isFirstBuild = true;
+  bool _hasScheduledInitialDelay = false;
+  bool _isPointerVisible = true;
+  Timer? _visibilityTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _isPointerVisible = widget.initialAnimationFrom == null;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scheduleInitialDelayIfNeeded();
+  }
+
+  @override
+  void dispose() {
+    _visibilityTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
@@ -130,7 +153,74 @@ class _RadialShapePointerState
       onChanged: widget.onChanged,
       shape: widget.shape,
       radialGauge: scope.rGauge,
+      isVisible: _isPointerVisible,
     );
+  }
+
+  void _scheduleInitialDelayIfNeeded() {
+    if (_hasScheduledInitialDelay) {
+      return;
+    }
+
+    _hasScheduledInitialDelay = true;
+
+    if (widget.initialAnimationFrom == null) {
+      _isPointerVisible = true;
+      return;
+    }
+
+    final RadialGaugeState scope = RadialGaugeState.of(context);
+    final Duration delay = _computeVisibilityDelay(scope.rGauge, scope.track);
+
+    if (delay <= Duration.zero) {
+      _isPointerVisible = true;
+      return;
+    }
+
+    _isPointerVisible = false;
+    controller.stop();
+    controller.value = 0;
+
+    _visibilityTimer = Timer(delay, () {
+      if (!mounted) {
+        return;
+      }
+      _visibilityTimer = null;
+      setState(() {
+        _isPointerVisible = true;
+      });
+      controller.forward();
+    });
+  }
+
+  Duration _computeVisibilityDelay(RadialGauge gauge, RadialTrack track) {
+    final double range = track.end - track.start;
+    if (range == 0) {
+      return Duration.zero;
+    }
+
+    final double normalized =
+        ((widget.value - track.start) / range).clamp(0.0, 1.0);
+    final Duration referenceDuration = _resolveReferenceDuration(gauge);
+    final int delayMs =
+        (referenceDuration.inMilliseconds * normalized).round();
+
+    return Duration(milliseconds: delayMs);
+  }
+
+  Duration _resolveReferenceDuration(RadialGauge gauge) {
+    final List<RadialValueBar>? valueBars = gauge.valueBar;
+    if (valueBars == null || valueBars.isEmpty) {
+      return widget.duration;
+    }
+
+    Duration longest = valueBars.first.duration;
+    for (int i = 1; i < valueBars.length; i++) {
+      if (valueBars[i].duration > longest) {
+        longest = valueBars[i].duration;
+      }
+    }
+    return longest;
   }
 }
 
@@ -144,6 +234,7 @@ class _RadialShapePointerRenderWidget extends LeafRenderObjectWidget {
     required this.onChanged,
     required this.shape,
     required this.radialGauge,
+    required this.isVisible,
   });
 
   final double value;
@@ -154,6 +245,7 @@ class _RadialShapePointerRenderWidget extends LeafRenderObjectWidget {
   final ValueChanged<double>? onChanged;
   final PointerShape shape;
   final RadialGauge radialGauge;
+  final bool isVisible;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -166,6 +258,7 @@ class _RadialShapePointerRenderWidget extends LeafRenderObjectWidget {
       onChanged: onChanged,
       shape: shape,
       radialGauge: radialGauge,
+      isVisible: isVisible,
     );
   }
 
@@ -180,6 +273,7 @@ class _RadialShapePointerRenderWidget extends LeafRenderObjectWidget {
       ..setWidth = width
       ..onChanged = onChanged
       ..setIsInteractive = isInteractive
-      ..setShape = shape;
+      ..setShape = shape
+      ..setIsVisible = isVisible;
   }
 }

@@ -148,7 +148,6 @@ class RadialValueBar extends ImplicitlyAnimatedWidget {
 class _RadialValueBarState extends AnimatedWidgetBaseState<RadialValueBar> {
   Tween<double>? _valueTween;
   bool _isFirstBuild = true;
-  final Object _progressTrackerToken = Object();
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
@@ -168,13 +167,9 @@ class _RadialValueBarState extends AnimatedWidgetBaseState<RadialValueBar> {
   @override
   Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
-    final double currentValue =
-        _valueTween?.evaluate(animation) ?? widget.value;
-    scope.reportValueBarProgress
-        ?.call(_progressTrackerToken, currentValue);
 
     return _RadialValueBarRenderWidget(
-      value: currentValue,
+      value: _valueTween?.evaluate(animation) ?? widget.value,
       color: widget.color,
       gradient: widget.gradient ??
           LinearGradient(colors: [widget.color, widget.color]),
@@ -182,14 +177,6 @@ class _RadialValueBarState extends AnimatedWidgetBaseState<RadialValueBar> {
       valueBarThickness: widget.valueBarThickness,
       radialGauge: scope.rGauge,
     );
-  }
-
-  @override
-  void dispose() {
-    RadialGaugeState.of(context)
-        .removeValueBarProgress
-        ?.call(_progressTrackerToken);
-    super.dispose();
   }
 }
 

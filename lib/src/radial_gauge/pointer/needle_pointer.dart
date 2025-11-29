@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'package:geekyants_flutter_gauges/src/radial_gauge/radial_gauge_state.dart';
@@ -74,8 +73,6 @@ class NeedlePointer extends ImplicitlyAnimatedWidget {
 class _NeedlePointerState extends AnimatedWidgetBaseState<NeedlePointer> {
   Tween<double>? _valueTween;
   bool _isFirstBuild = true;
-  ValueListenable<double>? _valueBarProgressListenable;
-  double? _latestValueBarProgress;
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
@@ -93,57 +90,11 @@ class _NeedlePointerState extends AnimatedWidgetBaseState<NeedlePointer> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _subscribeToValueBarProgress();
-  }
-
-  @override
-  void didUpdateWidget(covariant NeedlePointer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _subscribeToValueBarProgress();
-  }
-
-  @override
-  void dispose() {
-    _valueBarProgressListenable?.removeListener(_onValueBarProgressChanged);
-    super.dispose();
-  }
-
-  void _subscribeToValueBarProgress() {
-    final RadialGaugeState scope = RadialGaugeState.of(context);
-    final ValueListenable<double>? listenable =
-        scope.valueBarAnimationProgress;
-    if (_valueBarProgressListenable == listenable) {
-      return;
-    }
-
-    _valueBarProgressListenable
-        ?.removeListener(_onValueBarProgressChanged);
-    _valueBarProgressListenable = listenable;
-    _latestValueBarProgress = listenable?.value;
-    _valueBarProgressListenable
-        ?.addListener(_onValueBarProgressChanged);
-  }
-
-  void _onValueBarProgressChanged() {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _latestValueBarProgress = _valueBarProgressListenable?.value;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
-    final double? progressValue =
-        _latestValueBarProgress ?? scope.valueBarAnimationProgress?.value;
 
     return _NeedlePointerRenderWidget(
       value: _valueTween?.evaluate(animation) ?? widget.value,
-      valueBarProgress: progressValue,
       gradient: widget.gradient ??
           LinearGradient(colors: [widget.color, widget.color]),
       radialGauge: scope.rGauge,
@@ -162,7 +113,6 @@ class _NeedlePointerState extends AnimatedWidgetBaseState<NeedlePointer> {
 class _NeedlePointerRenderWidget extends LeafRenderObjectWidget {
   const _NeedlePointerRenderWidget({
     required this.value,
-    required this.valueBarProgress,
     required this.gradient,
     required this.radialGauge,
     required this.tailColor,
@@ -176,7 +126,6 @@ class _NeedlePointerRenderWidget extends LeafRenderObjectWidget {
   });
 
   final double value;
-  final double? valueBarProgress;
   final LinearGradient gradient;
   final RadialGauge radialGauge;
   final Color tailColor;
@@ -194,7 +143,6 @@ class _NeedlePointerRenderWidget extends LeafRenderObjectWidget {
       gradient: gradient,
       radialGauge: radialGauge,
       value: value,
-      valueBarProgress: valueBarProgress,
       tailColor: tailColor,
       needleStyle: needleStyle,
       isInteractive: isInteractive,
@@ -211,7 +159,6 @@ class _NeedlePointerRenderWidget extends LeafRenderObjectWidget {
       BuildContext context, covariant RenderNeedlePointer renderObject) {
     renderObject
       ..setValue = value
-      ..valueBarProgress = valueBarProgress
       ..setColor = color
       ..setIsInteractive = isInteractive
       ..setTailColor = tailColor

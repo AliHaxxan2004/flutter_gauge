@@ -15,7 +15,6 @@ class RenderRadialShapePointer extends RenderBox {
     required bool isInteractive,
     required PointerShape shape,
     required RadialGauge radialGauge,
-    required double? valueBarProgress,
   })  : _value = value,
         _color = color,
         _height = height,
@@ -23,8 +22,7 @@ class RenderRadialShapePointer extends RenderBox {
         _isInteractive = isInteractive,
         _width = width,
         _shape = shape,
-        _radialGauge = radialGauge,
-        _valueBarProgress = valueBarProgress;
+        _radialGauge = radialGauge;
 
   double _value;
   Color _color;
@@ -127,23 +125,10 @@ class RenderRadialShapePointer extends RenderBox {
     markNeedsPaint();
   }
 
-  double? _valueBarProgress;
-  set valueBarProgress(double? progress) {
-    if (_valueBarProgress == progress) {
-      return;
-    }
-    _valueBarProgress = progress;
-    markNeedsPaint();
-  }
-
   late Rect pointerRect;
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    final double visibility = _visibilityFactor;
-    if (visibility <= 0) {
-      return;
-    }
     final canvas = context.canvas;
 
     double gaugeStart = _radialGauge.track.start;
@@ -200,30 +185,8 @@ class RenderRadialShapePointer extends RenderBox {
         center: Offset(pointerEndX, pointerEndY), radius: _width);
 
     // canvas.drawRect(pointerRect, Paint()..color = _color);
-    canvas.drawCircle(
-      Offset(circlePointerEndX, circlePointerEndY),
-      _width,
-      Paint()..color = _color.withOpacity(visibility.clamp(0.0, 1.0)),
-    );
+    canvas.drawCircle(Offset(circlePointerEndX, circlePointerEndY), _width,
+        Paint()..color = _color);
     // canvas.drawPath(pointerPath, Paint()..color = _color);
-  }
-
-  double get _visibilityFactor {
-    final double? progress = _valueBarProgress;
-    if (progress == null) {
-      return 1.0;
-    }
-    if (progress < _value) {
-      return 0.0;
-    }
-
-    final double span =
-        (_radialGauge.track.end - _radialGauge.track.start).abs();
-    final double fadeSpan = span == 0 ? 1.0 : span * 0.05;
-    if (fadeSpan <= 0) {
-      return 1.0;
-    }
-    final double delta = progress - _value;
-    return (delta / fadeSpan).clamp(0.0, 1.0);
   }
 }

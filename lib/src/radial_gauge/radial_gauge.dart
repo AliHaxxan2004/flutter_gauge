@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'package:geekyants_flutter_gauges/src/radial_gauge/radial_gauge_container.dart';
@@ -180,16 +179,11 @@ class RadialGauge extends StatefulWidget {
 
 class _RadialGaugeState extends State<RadialGauge> {
   late List<Widget> _radialGaugeWidgets;
-  ValueNotifier<double>? _valueBarAnimationProgress;
-  final Map<Object, double> _valueBarProgressEntries = <Object, double>{};
 
   @override
   void initState() {
     super.initState();
     _radialGaugeWidgets = <Widget>[];
-    if (_hasValueBars(widget)) {
-      _valueBarAnimationProgress = ValueNotifier<double>(widget.track.start);
-    }
   }
 
   @override
@@ -197,74 +191,7 @@ class _RadialGaugeState extends State<RadialGauge> {
     if (widget != oldWidget) {
       _radialGaugeWidgets = <Widget>[];
     }
-    _syncValueBarProgressState(oldWidget);
     super.didUpdateWidget(oldWidget);
-  }
-
-  @override
-  void dispose() {
-    _valueBarAnimationProgress?.dispose();
-    super.dispose();
-  }
-
-  bool _hasValueBars(RadialGauge gauge) {
-    return gauge.valueBar != null && gauge.valueBar!.isNotEmpty;
-  }
-
-  void _syncValueBarProgressState(RadialGauge oldWidget) {
-    final bool hadValueBars = _hasValueBars(oldWidget);
-    final bool hasValueBars = _hasValueBars(widget);
-
-    if (hasValueBars && !hadValueBars) {
-      _valueBarAnimationProgress ??= ValueNotifier<double>(widget.track.start);
-    } else if (!hasValueBars && hadValueBars) {
-      _valueBarAnimationProgress?.dispose();
-      _valueBarAnimationProgress = null;
-      _valueBarProgressEntries.clear();
-    }
-
-    if (hasValueBars && widget.valueBar != oldWidget.valueBar) {
-      _valueBarProgressEntries.clear();
-      _valueBarAnimationProgress?.value = widget.track.start;
-    }
-
-    if (_valueBarAnimationProgress != null &&
-        widget.track.start != oldWidget.track.start) {
-      _valueBarProgressEntries.clear();
-      _valueBarAnimationProgress!.value = widget.track.start;
-    }
-  }
-
-  void _reportValueBarProgress(Object identifier, double progress) {
-    if (_valueBarAnimationProgress == null) {
-      return;
-    }
-    _valueBarProgressEntries[identifier] = progress;
-    _valueBarAnimationProgress!.value = _currentMaxValueBarProgress();
-  }
-
-  void _removeValueBarProgress(Object identifier) {
-    if (_valueBarAnimationProgress == null) {
-      return;
-    }
-    final bool removed = _valueBarProgressEntries.remove(identifier) != null;
-    if (removed) {
-      _valueBarAnimationProgress!.value = _currentMaxValueBarProgress();
-    }
-  }
-
-  double _currentMaxValueBarProgress() {
-    if (_valueBarProgressEntries.isEmpty) {
-      return widget.track.start;
-    }
-
-    double maxValue = widget.track.start;
-    for (final double value in _valueBarProgressEntries.values) {
-      if (value > maxValue) {
-        maxValue = value;
-      }
-    }
-    return maxValue;
   }
 
   List<Widget> _buildChildWidgets(BuildContext context) {
@@ -312,9 +239,6 @@ class _RadialGaugeState extends State<RadialGauge> {
       rGauge: widget,
       track: widget.track,
       child: child,
-      valueBarAnimationProgress: _valueBarAnimationProgress,
-      reportValueBarProgress: _reportValueBarProgress,
-      removeValueBarProgress: _removeValueBarProgress,
     ));
   }
 

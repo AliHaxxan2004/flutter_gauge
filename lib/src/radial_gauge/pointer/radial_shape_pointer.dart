@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'package:geekyants_flutter_gauges/src/radial_gauge/pointer/radial_shape_pointer_painter.dart';
@@ -102,8 +101,6 @@ class _RadialShapePointerState
     extends AnimatedWidgetBaseState<RadialShapePointer> {
   Tween<double>? _valueTween;
   bool _isFirstBuild = true;
-  ValueListenable<double>? _valueBarProgressListenable;
-  double? _latestValueBarProgress;
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
@@ -121,57 +118,11 @@ class _RadialShapePointerState
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _subscribeToValueBarProgress();
-  }
-
-  @override
-  void didUpdateWidget(covariant RadialShapePointer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _subscribeToValueBarProgress();
-  }
-
-  @override
-  void dispose() {
-    _valueBarProgressListenable?.removeListener(_onValueBarProgressChanged);
-    super.dispose();
-  }
-
-  void _subscribeToValueBarProgress() {
-    final RadialGaugeState scope = RadialGaugeState.of(context);
-    final ValueListenable<double>? listenable =
-        scope.valueBarAnimationProgress;
-    if (_valueBarProgressListenable == listenable) {
-      return;
-    }
-
-    _valueBarProgressListenable
-        ?.removeListener(_onValueBarProgressChanged);
-    _valueBarProgressListenable = listenable;
-    _latestValueBarProgress = listenable?.value;
-    _valueBarProgressListenable
-        ?.addListener(_onValueBarProgressChanged);
-  }
-
-  void _onValueBarProgressChanged() {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _latestValueBarProgress = _valueBarProgressListenable?.value;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
-    final double? progressValue =
-        _latestValueBarProgress ?? scope.valueBarAnimationProgress?.value;
 
     return _RadialShapePointerRenderWidget(
       value: _valueTween?.evaluate(animation) ?? widget.value,
-      valueBarProgress: progressValue,
       color: widget.color,
       height: widget.height,
       width: widget.width,
@@ -186,7 +137,6 @@ class _RadialShapePointerState
 class _RadialShapePointerRenderWidget extends LeafRenderObjectWidget {
   const _RadialShapePointerRenderWidget({
     required this.value,
-    required this.valueBarProgress,
     required this.color,
     required this.height,
     required this.width,
@@ -197,7 +147,6 @@ class _RadialShapePointerRenderWidget extends LeafRenderObjectWidget {
   });
 
   final double value;
-  final double? valueBarProgress;
   final Color color;
   final double height;
   final double width;
@@ -210,7 +159,6 @@ class _RadialShapePointerRenderWidget extends LeafRenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) {
     return RenderRadialShapePointer(
       value: value,
-      valueBarProgress: valueBarProgress,
       color: color,
       height: height,
       width: width,
@@ -226,7 +174,6 @@ class _RadialShapePointerRenderWidget extends LeafRenderObjectWidget {
       BuildContext context, RenderRadialShapePointer renderObject) {
     renderObject
       ..setValue = value
-      ..valueBarProgress = valueBarProgress
       ..setRadialGauge = radialGauge
       ..setColor = color
       ..setHeight = height

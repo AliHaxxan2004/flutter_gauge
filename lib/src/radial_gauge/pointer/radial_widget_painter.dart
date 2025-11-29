@@ -10,13 +10,11 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     required bool isInteractive,
     required ValueChanged<double>? onChanged,
     VoidCallback? onTap, // Add this
-    required double? valueBarProgress,
   })  : _value = value,
         _radialGauge = radialGauge,
         _isInteractive = isInteractive,
         _onChanged = onChanged,
-        _onTap = onTap,
-        _valueBarProgress = valueBarProgress;
+        _onTap = onTap;
 
   /// Gets the value to [RadialWidgetPointer].
   double get value => _value;
@@ -80,20 +78,24 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     }
   }
 
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final RenderBox? pointerChild = child;
+    if (pointerChild == null) return;
+
+    final Offset pointerPosition = _resolvePointerPosition();
+    final Offset childHalfSize =
+        Offset(pointerChild.size.width / 2, pointerChild.size.height / 2);
+    final Offset childCenterOffset = offset + pointerPosition - childHalfSize;
+
+    context.paintChild(pointerChild, childCenterOffset);
+  }
+
   VoidCallback? get onTap => _onTap;
   VoidCallback? _onTap;
   set onTap(VoidCallback? value) {
     if (value == _onTap) return;
     _onTap = value;
-  }
-
-  double? _valueBarProgress;
-  set valueBarProgress(double? progress) {
-    if (_valueBarProgress == progress) {
-      return;
-    }
-    _valueBarProgress = progress;
-    markNeedsPaint();
   }
 
   @override
@@ -152,52 +154,5 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
       centerX + pointerRadius * cos(angle),
       centerY + pointerRadius * sin(angle),
     );
-  }
-
-  double get _visibilityFactor {
-    final double? progress = _valueBarProgress;
-    if (progress == null) {
-      return 1.0;
-    }
-
-    if (progress < _value) {
-      return 0.0;
-    }
-
-    final double span =
-        (_radialGauge.track.end - _radialGauge.track.start).abs();
-    final double fadeSpan = span == 0 ? 1.0 : span * 0.05;
-    if (fadeSpan <= 0) {
-      return 1.0;
-    }
-    final double delta = progress - _value;
-    return (delta / fadeSpan).clamp(0.0, 1.0);
-  }
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    final double visibility = _visibilityFactor;
-    if (visibility <= 0) {
-      return;
-    }
-    final RenderBox? pointerChild = child;
-    if (pointerChild == null) return;
-
-    final Offset pointerPosition = _resolvePointerPosition();
-    final Offset childHalfSize =
-        Offset(pointerChild.size.width / 2, pointerChild.size.height / 2);
-    final Offset childCenterOffset = offset + pointerPosition - childHalfSize;
-
-    if (visibility >= 1) {
-      context.paintChild(pointerChild, childCenterOffset);
-    } else {
-      context.pushOpacity(
-        childCenterOffset,
-        (visibility * 255).round().clamp(0, 255),
-        (innerContext, innerOffset) {
-          innerContext.paintChild(pointerChild, innerOffset);
-        },
-      );
-    }
   }
 }

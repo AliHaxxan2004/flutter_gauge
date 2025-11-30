@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'package:geekyants_flutter_gauges/src/radial_gauge/pointer/radial_widget_painter.dart';
 import '../radial_gauge_state.dart';
+import '../utils/radial_gauge_math.dart';
 
 ///
 /// A [RadialWidgetPointer] is used to render the widget pointer in the [RadialGauge].
@@ -29,9 +30,16 @@ class RadialWidgetPointer extends ImplicitlyAnimatedWidget {
     this.onChanged,
     this.onTap,
     this.initialAnimationFrom,
+    this.fadeInTriggerProgress = 0.8,
+    this.fadeInDuration = const Duration(milliseconds: 300),
+    this.enableValueBasedStagger = true,
     Duration duration = const Duration(milliseconds: 1000),
     Curve curve = Curves.easeInOut,
-  }) : super(key: key, duration: duration, curve: curve);
+  })  : assert(
+          fadeInTriggerProgress >= 0 && fadeInTriggerProgress <= 1,
+          '`fadeInTriggerProgress` must be within 0–1.',
+        ),
+        super(key: key, duration: duration, curve: curve);
 
   ///
   /// `value` Sets the value of the pointer on the [RadialGauge]
@@ -62,6 +70,21 @@ class RadialWidgetPointer extends ImplicitlyAnimatedWidget {
   /// If set, the pointer will animate from this value to the current value when first rendered.
   final double? initialAnimationFrom;
 
+  /// Fraction (0–1) of the implicit animation progress after which the pointer
+  /// begins to fade in. Defaults to `0.8`, meaning the pointer waits until
+  /// 80% of the animation has completed before becoming visible.
+  final double fadeInTriggerProgress;
+
+  /// Duration used to ease the fade in once it starts. This is internally
+  /// normalized against [duration] to keep the fade smooth even if the total
+  /// animation time is reduced to make the pointers appear sooner.
+  final Duration fadeInDuration;
+
+  /// When enabled, pointers with lower values start their fade earlier than
+  /// pointers with higher values, creating a sequential appearance that follows
+  /// the gauge values (e.g., 10 → 20 → 30).
+  final bool enableValueBasedStagger;
+
   @override
   ImplicitlyAnimatedWidgetState<RadialWidgetPointer> createState() =>
       _RadialWidgetPointerState();
@@ -90,25 +113,75 @@ class _RadialWidgetPointerState
   @override
   Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
-    final double progress = animation.value;
-    const double fadeStart = 0.8;
-    const double fadeRange = 1 - fadeStart;
-    // Fade the pointer only during the last 20% of the animation for a smooth reveal.
-    final double opacity = progress <= fadeStart
-        ? 0
-        : ((progress - fadeStart) / fadeRange).clamp(0.0, 1.0).toDouble();
 
-    return Opacity(
-      opacity: opacity,
-      child: _RadialWidgetPointerRenderWidget(
-        value: _valueTween?.evaluate(animation) ?? widget.value,
-        radialGauge: scope.rGauge,
-        isInteractive: widget.isInteractive,
-        onChanged: widget.onChanged,
-        onTap: widget.onTap,
-        child: widget.child,
-      ),
+    final double fadeStart = _resolveFadeStart(scope);
+    final double fadeSpan = _resolveFadeSpan();
+    final double fadeEnd = (fadeStart + fadeSpan).clamp(fadeStart, 1.0);
+
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        final double pointerValue =
+            _valueTween?.evaluate(animation) ?? widget.value;
+        final double opacity =
+            _resolveOpacity(animation.value, fadeStart, fadeEnd);
+
+        return IgnorePointer(
+          ignoring: opacity <= 0,
+          child: Opacity(
+            opacity: opacity,
+            child: _RadialWidgetPointerRenderWidget(
+              value: pointerValue,
+              radialGauge: scope.rGauge,
+              isInteractive: widget.isInteractive,
+              onChanged: widget.onChanged,
+              onTap: widget.onTap,
+              child: widget.child,
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  double _resolveFadeStart(RadialGaugeState scope) {
+    final double baseTrigger = widget.fadeInTriggerProgress.clamp(0.0, 1.0);
+
+    if (!widget.enableValueBasedStagger) {
+      return baseTrigger;
+    }
+
+    final double normalizedValue = normalizeGaugeValue(
+      widget.value,
+      scope.track.start,
+      scope.track.end,
+    );
+
+    const double minFactor = 0.25;
+    final double minTrigger = baseTrigger * minFactor;
+    return minTrigger + (baseTrigger - minTrigger) * normalizedValue;
+  }
+
+  double _resolveFadeSpan() {
+    final int totalMs = widget.duration.inMilliseconds;
+    if (totalMs <= 0) {
+      return 1;
+    }
+
+    final int fadeMs = widget.fadeInDuration.inMilliseconds.clamp(1, totalMs);
+    return fadeMs / totalMs;
+  }
+
+  double _resolveOpacity(double progress, double fadeStart, double fadeEnd) {
+    if (progress <= fadeStart) {
+      return 0;
+    }
+    if (progress >= fadeEnd || fadeEnd == fadeStart) {
+      return 1;
+    }
+
+    final double normalized = (progress - fadeStart) / (fadeEnd - fadeStart);
+    return normalized.clamp(0.0, 1.0);
   }
 }
 

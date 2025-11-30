@@ -72,6 +72,7 @@ class _RadialWidgetPointerState
   Tween<double>? _valueTween;
   bool _isFirstBuild = true;
   bool _isInitialAnimation = false;
+  bool _didTriggerInitialFade = false;
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
@@ -103,6 +104,11 @@ class _RadialWidgetPointerState
     double opacity = 1.0;
 
     if (_isInitialAnimation) {
+      if (!_didTriggerInitialFade && !controller.isAnimating) {
+        _didTriggerInitialFade = true;
+        controller.forward(from: 0);
+      }
+
       // During initial animation, we want the pointer to be stationary at the target value
       // and fade in as the "progress" (animation value) passes it.
       currentValue = widget.value;

@@ -90,14 +90,24 @@ class _RadialWidgetPointerState
   @override
   Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
+    final double progress = animation.value;
+    const double fadeStart = 0.8;
+    const double fadeRange = 1 - fadeStart;
+    // Fade the pointer only during the last 20% of the animation for a smooth reveal.
+    final double opacity = progress <= fadeStart
+        ? 0
+        : ((progress - fadeStart) / fadeRange).clamp(0.0, 1.0).toDouble();
 
-    return _RadialWidgetPointerRenderWidget(
-      value: _valueTween?.evaluate(animation) ?? widget.value,
-      radialGauge: scope.rGauge,
-      isInteractive: widget.isInteractive,
-      onChanged: widget.onChanged,
-      onTap: widget.onTap,
-      child: widget.child,
+    return Opacity(
+      opacity: opacity,
+      child: _RadialWidgetPointerRenderWidget(
+        value: _valueTween?.evaluate(animation) ?? widget.value,
+        radialGauge: scope.rGauge,
+        isInteractive: widget.isInteractive,
+        onChanged: widget.onChanged,
+        onTap: widget.onTap,
+        child: widget.child,
+      ),
     );
   }
 }

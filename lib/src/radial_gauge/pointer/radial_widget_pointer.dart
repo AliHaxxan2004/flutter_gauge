@@ -123,10 +123,9 @@ class _RadialWidgetPointerState
         final double relativePosition = (widget.value - trackStart) / range;
         final double currentProgress = animation.value;
 
-        // Adjust fade window based on position
-        // Make it much faster for pointers at the start (0)
-        final double fadeWindow =
-            relativePosition < 0.01 ? 0.1 : 0.3; // Faster fade at start
+        // Calculate opacity with a smoother, more natural fade
+        // Use a larger fade window for gradual transitions
+        const double fadeWindow = 0.3; // 30% of duration for smooth fade
 
         // Start fading in slightly before reaching the position for anticipation
         const double fadeStart = 0.05; // Start 5% earlier

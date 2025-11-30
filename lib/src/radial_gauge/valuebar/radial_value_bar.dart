@@ -151,9 +151,16 @@ class _RadialValueBarState extends AnimatedWidgetBaseState<RadialValueBar> {
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
-    final beginValue = _isFirstBuild && widget.initialAnimationFrom != null
-        ? widget.initialAnimationFrom!
-        : widget.value;
+    bool shouldAnimate = _isFirstBuild && widget.initialAnimationFrom != null;
+
+    if (shouldAnimate &&
+        widget.initialAnimationFrom == 0 &&
+        widget.value <= 1) {
+      shouldAnimate = false;
+    }
+
+    final beginValue =
+        shouldAnimate ? widget.initialAnimationFrom! : widget.value;
 
     _valueTween = visitor(
       _valueTween,

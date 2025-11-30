@@ -28,6 +28,7 @@ class RadialWidgetPointer extends ImplicitlyAnimatedWidget {
     this.isInteractive = false,
     this.onChanged,
     this.onTap,
+    this.enableAnimation = true,
     this.initialAnimationFrom,
     Duration duration = const Duration(milliseconds: 1000),
     Curve curve = Curves.easeInOut,
@@ -42,6 +43,11 @@ class RadialWidgetPointer extends ImplicitlyAnimatedWidget {
   /// `child` is the widget to be displayed at the pointer position
   ///
   final Widget child;
+
+  ///
+  /// `enableAnimation` Specifies whether to enable the animation for the pointers.
+  ///
+  final bool enableAnimation;
 
   final VoidCallback? onTap; // Add this
 
@@ -77,10 +83,11 @@ class _RadialWidgetPointerState
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
     if (_isFirstBuild) {
-      _isInitialAnimation = true;
+      _isInitialAnimation = widget.enableAnimation;
     }
 
-    final beginValue = _isFirstBuild ? 0.0 : widget.value;
+    final beginValue =
+        (_isFirstBuild && widget.enableAnimation) ? 0.0 : widget.value;
 
     _valueTween = visitor(
       _valueTween,
@@ -89,11 +96,13 @@ class _RadialWidgetPointerState
     ) as Tween<double>?;
 
     // Ensure animation runs on first build even if value is 0
-    _fadeTween = visitor(
-      _fadeTween,
-      1.0,
-      (dynamic value) => Tween<double>(begin: 0.0),
-    ) as Tween<double>?;
+    if (widget.enableAnimation) {
+      _fadeTween = visitor(
+        _fadeTween,
+        1.0,
+        (dynamic value) => Tween<double>(begin: 0.0),
+      ) as Tween<double>?;
+    }
 
     _isFirstBuild = false;
   }

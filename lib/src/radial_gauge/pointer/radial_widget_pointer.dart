@@ -122,20 +122,21 @@ class _RadialWidgetPointerState
         // Start fading in slightly before reaching the position for anticipation
         const double fadeStart = 0.05; // Start 5% earlier
 
-        // Calculate when to start fading, ensuring it doesn't go below 0
-        final double fadeStartPosition =
-            (relativePosition - fadeStart).clamp(0.0, 1.0);
-
-        if (currentProgress < fadeStartPosition) {
+        if (currentProgress < relativePosition - fadeStart) {
           opacity = 0.0;
         } else {
           double fadeProgress =
-              (currentProgress - fadeStartPosition) / fadeWindow;
+              (currentProgress - (relativePosition - fadeStart)) / fadeWindow;
           // Apply easing curve for more natural motion
           double easedProgress =
               Curves.easeInOut.transform(fadeProgress.clamp(0.0, 1.0));
           opacity = easedProgress;
         }
+      }
+
+      // If the widget's value is at or below the track start, it should be fully visible.
+      if (widget.value <= trackStart) {
+        opacity = 1.0;
       }
     }
 

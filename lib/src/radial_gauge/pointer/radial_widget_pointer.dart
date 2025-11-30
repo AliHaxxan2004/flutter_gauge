@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'package:geekyants_flutter_gauges/src/radial_gauge/pointer/radial_widget_painter.dart';
@@ -73,6 +75,40 @@ class _RadialWidgetPointerState
   bool _isFirstBuild = true;
 
   static const double _fadeWindowFraction = 0.35;
+  late final AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  Timer? _fadeDelayTimer;
+  double? _lastNormalizedValue;
+  bool _shouldRestartFade = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: _fadeDurationFrom(widget.duration),
+    );
+    _fadeAnimation =
+        CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
+  }
+
+  @override
+  void didUpdateWidget(RadialWidgetPointer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.duration != oldWidget.duration) {
+      _fadeController.duration = _fadeDurationFrom(widget.duration);
+    }
+    if (widget.value != oldWidget.value) {
+      _shouldRestartFade = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _fadeDelayTimer?.cancel();
+    _fadeController.dispose();
+    super.dispose();
+  }
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
@@ -98,7 +134,7 @@ class _RadialWidgetPointerState
       radialGauge.track.end,
       widget.value,
     );
-    final fadeAnimation = _buildFadeAnimation(normalizedValue);
+    _scheduleFade(normalizedValue);
 
     return _RadialWidgetPointerRenderWidget(
       value: _valueTween?.evaluate(animation) ?? widget.value,
@@ -107,20 +143,10 @@ class _RadialWidgetPointerState
       onChanged: widget.onChanged,
       onTap: widget.onTap,
       child: FadeTransition(
-        opacity: fadeAnimation,
+        opacity: _fadeAnimation,
         child: widget.child,
       ),
     );
-  }
-
-  Animation<double> _buildFadeAnimation(double normalizedValue) {
-    final double clampedWindow =
-        _fadeWindowFraction.clamp(0.1, 1.0 - 1e-6); // avoid zero width
-    final double start =
-        (normalizedValue * (1 - clampedWindow)).clamp(0.0, 1.0 - clampedWindow);
-    final double end = (start + clampedWindow).clamp(start + 1e-3, 1.0);
-    final curve = Interval(start, end, curve: Curves.easeInOut);
-    return CurvedAnimation(parent: animation, curve: curve);
   }
 
   double _normalizeValueForGauge(double start, double end, double value) {
@@ -129,6 +155,50 @@ class _RadialWidgetPointerState
     }
     final normalized = (value - start) / (end - start);
     return normalized.clamp(0.0, 1.0);
+  }
+
+  void _scheduleFade(double normalizedValue) {
+    final hasSameValue = _lastNormalizedValue == normalizedValue;
+    if (!_shouldRestartFade && hasSameValue) {
+      return;
+    }
+    _shouldRestartFade = false;
+    _lastNormalizedValue = normalizedValue;
+    _fadeDelayTimer?.cancel();
+    _fadeController.value = 0.0;
+
+    final int totalMs = widget.duration.inMilliseconds;
+    if (totalMs <= 0) {
+      _fadeController.forward(from: 0.0);
+      return;
+    }
+
+    final double clampedWindow =
+        _fadeWindowFraction.clamp(0.1, 1.0 - 1e-6); // avoid zero width
+    final double delayFraction =
+        (normalizedValue * (1 - clampedWindow)).clamp(0.0, 1.0);
+    final int delayMs = (totalMs * delayFraction).round();
+
+    if (delayMs <= 0) {
+      _fadeController.forward(from: 0.0);
+      return;
+    }
+
+    _fadeDelayTimer = Timer(Duration(milliseconds: delayMs), () {
+      if (!mounted) return;
+      _fadeController.forward(from: 0.0);
+    });
+  }
+
+  Duration _fadeDurationFrom(Duration base) {
+    final int totalMs = base.inMilliseconds;
+    if (totalMs <= 0) {
+      return const Duration(milliseconds: 1);
+    }
+    final fadeMs = (totalMs * _fadeWindowFraction)
+        .round()
+        .clamp(1, totalMs); // always at least 1ms
+    return Duration(milliseconds: fadeMs);
   }
 }
 

@@ -75,13 +75,11 @@ class _RadialWidgetPointerState
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
-    if (_isFirstBuild && widget.initialAnimationFrom != null) {
+    if (_isFirstBuild) {
       _isInitialAnimation = true;
     }
 
-    final beginValue = _isFirstBuild && widget.initialAnimationFrom != null
-        ? widget.initialAnimationFrom!
-        : widget.value;
+    final beginValue = _isFirstBuild ? 0.0 : widget.value;
 
     _valueTween = visitor(
       _valueTween,
@@ -117,17 +115,22 @@ class _RadialWidgetPointerState
         final double relativePosition = (widget.value - trackStart) / range;
         final double currentProgress = animation.value;
 
-        // Calculate opacity
-        // We want it to start fading in slightly before or exactly when progress reaches it.
-        // Let's say we want a quick fade in.
-        const double fadeWindow = 0.1; // 10% of the duration to fade in
+        // Calculate opacity with a smoother, more natural fade
+        // Use a larger fade window for gradual transitions
+        const double fadeWindow = 0.3; // 30% of duration for smooth fade
 
-        if (currentProgress < relativePosition) {
+        // Start fading in slightly before reaching the position for anticipation
+        const double fadeStart = 0.05; // Start 5% earlier
+
+        if (currentProgress < relativePosition - fadeStart) {
           opacity = 0.0;
         } else {
           double fadeProgress =
-              (currentProgress - relativePosition) / fadeWindow;
-          opacity = fadeProgress.clamp(0.0, 1.0);
+              (currentProgress - (relativePosition - fadeStart)) / fadeWindow;
+          // Apply easing curve for more natural motion
+          double easedProgress =
+              Curves.easeInOut.transform(fadeProgress.clamp(0.0, 1.0));
+          opacity = easedProgress;
         }
       }
     }

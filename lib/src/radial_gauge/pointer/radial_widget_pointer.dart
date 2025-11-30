@@ -79,7 +79,6 @@ class _RadialWidgetPointerState
   late Animation<double> _fadeAnimation;
   Timer? _fadeDelayTimer;
   double? _lastNormalizedValue;
-  bool _shouldRestartFade = true;
 
   @override
   void initState() {
@@ -93,13 +92,21 @@ class _RadialWidgetPointerState
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateFadeSequence(forceRestart: true);
+  }
+
+  @override
   void didUpdateWidget(RadialWidgetPointer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.duration != oldWidget.duration) {
       _fadeController.duration = _fadeDurationFrom(widget.duration);
     }
     if (widget.value != oldWidget.value) {
-      _shouldRestartFade = true;
+      _updateFadeSequence(forceRestart: true);
+    } else {
+      _updateFadeSequence(forceRestart: false);
     }
   }
 
@@ -129,12 +136,6 @@ class _RadialWidgetPointerState
   Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
     final radialGauge = scope.rGauge;
-    final normalizedValue = _normalizeValueForGauge(
-      radialGauge.track.start,
-      radialGauge.track.end,
-      widget.value,
-    );
-    _scheduleFade(normalizedValue);
 
     return _RadialWidgetPointerRenderWidget(
       value: _valueTween?.evaluate(animation) ?? widget.value,
@@ -157,13 +158,24 @@ class _RadialWidgetPointerState
     return normalized.clamp(0.0, 1.0);
   }
 
-  void _scheduleFade(double normalizedValue) {
-    final hasSameValue = _lastNormalizedValue == normalizedValue;
-    if (!_shouldRestartFade && hasSameValue) {
+  void _updateFadeSequence({required bool forceRestart}) {
+    final radialGauge = RadialGaugeState.of(context).rGauge;
+    final normalizedValue = _normalizeValueForGauge(
+      radialGauge.track.start,
+      radialGauge.track.end,
+      widget.value,
+    );
+
+    final bool sameValue = _lastNormalizedValue != null &&
+        (_lastNormalizedValue! - normalizedValue).abs() < 0.0001;
+    if (!forceRestart && sameValue) {
       return;
     }
-    _shouldRestartFade = false;
     _lastNormalizedValue = normalizedValue;
+    _startFadeWithDelay(normalizedValue);
+  }
+
+  void _startFadeWithDelay(double normalizedValue) {
     _fadeDelayTimer?.cancel();
     _fadeController.value = 0.0;
 

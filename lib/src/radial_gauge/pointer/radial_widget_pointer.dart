@@ -70,6 +70,7 @@ class RadialWidgetPointer extends ImplicitlyAnimatedWidget {
 class _RadialWidgetPointerState
     extends AnimatedWidgetBaseState<RadialWidgetPointer> {
   Tween<double>? _valueTween;
+  Tween<double>? _fadeTween;
   bool _isFirstBuild = true;
   bool _isInitialAnimation = false;
 
@@ -85,6 +86,13 @@ class _RadialWidgetPointerState
       _valueTween,
       widget.value,
       (dynamic value) => Tween<double>(begin: beginValue),
+    ) as Tween<double>?;
+
+    // Ensure animation runs on first build even if value is 0
+    _fadeTween = visitor(
+      _fadeTween,
+      1.0,
+      (dynamic value) => Tween<double>(begin: 0.0),
     ) as Tween<double>?;
 
     _isFirstBuild = false;

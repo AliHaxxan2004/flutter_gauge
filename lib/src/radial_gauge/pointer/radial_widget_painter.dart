@@ -27,7 +27,6 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     }
     _value = value;
     markNeedsPaint();
-    markNeedsLayout();
   }
 
   /// Sets  isInteractive for  [RadialWidgetPointer].
@@ -38,7 +37,6 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
     _isInteractive = value;
     markNeedsPaint();
-    markNeedsLayout();
   }
 
   RadialGauge get radialGauge => _radialGauge;
@@ -50,7 +48,6 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
 
     _radialGauge = value;
     markNeedsPaint();
-    markNeedsLayout();
   }
 
   /// Gets  isInteractive for  [RadialWidgetPointer].
@@ -140,8 +137,7 @@ class RenderRadialWidgetPointer extends RenderProxyBox {
     final double startAngle =
         (_radialGauge.track.startAngle - 180) * (pi / 180);
     final double endAngle = (_radialGauge.track.endAngle - 180) * (pi / 180);
-    final double angle =
-        startAngle + normalizedValue * (endAngle - startAngle);
+    final double angle = startAngle + normalizedValue * (endAngle - startAngle);
 
     final double pointerRadius =
         (size.shortestSide / 2.0 - _radialGauge.track.thickness) *

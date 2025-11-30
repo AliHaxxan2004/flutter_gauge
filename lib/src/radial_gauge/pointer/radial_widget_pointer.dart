@@ -160,7 +160,9 @@ class _RadialWidgetPointerState
       onTap: widget.onTap,
       child: Opacity(
         opacity: opacity,
-        child: widget.child,
+        child: RepaintBoundary(
+          child: widget.child,
+        ),
       ),
     );
   }

@@ -122,11 +122,15 @@ class _RadialWidgetPointerState
         // Start fading in slightly before reaching the position for anticipation
         const double fadeStart = 0.05; // Start 5% earlier
 
-        if (currentProgress < relativePosition - fadeStart) {
+        // Calculate when to start fading, ensuring it doesn't go below 0
+        final double fadeStartPosition =
+            (relativePosition - fadeStart).clamp(0.0, 1.0);
+
+        if (currentProgress < fadeStartPosition) {
           opacity = 0.0;
         } else {
           double fadeProgress =
-              (currentProgress - (relativePosition - fadeStart)) / fadeWindow;
+              (currentProgress - fadeStartPosition) / fadeWindow;
           // Apply easing curve for more natural motion
           double easedProgress =
               Curves.easeInOut.transform(fadeProgress.clamp(0.0, 1.0));

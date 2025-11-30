@@ -72,7 +72,6 @@ class _RadialWidgetPointerState
   Tween<double>? _valueTween;
   bool _isFirstBuild = true;
   bool _isInitialAnimation = false;
-  bool _didTriggerInitialFade = false;
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
@@ -104,11 +103,6 @@ class _RadialWidgetPointerState
     double opacity = 1.0;
 
     if (_isInitialAnimation) {
-      if (!_didTriggerInitialFade && !controller.isAnimating) {
-        _didTriggerInitialFade = true;
-        controller.forward(from: 0);
-      }
-
       // During initial animation, we want the pointer to be stationary at the target value
       // and fade in as the "progress" (animation value) passes it.
       currentValue = widget.value;
@@ -118,8 +112,7 @@ class _RadialWidgetPointerState
       final double range = trackEnd - trackStart;
 
       if (range != 0) {
-        final double normalizedPosition =
-            ((widget.value - trackStart) / range).clamp(0.0, 1.0).toDouble();
+        final double relativePosition = (widget.value - trackStart) / range;
         final double currentProgress = animation.value;
 
         // Calculate opacity with a smoother, more natural fade
@@ -128,16 +121,14 @@ class _RadialWidgetPointerState
 
         // Start fading in slightly before reaching the position for anticipation
         const double fadeStart = 0.05; // Start 5% earlier
-        final double fadeStartPosition =
-            (normalizedPosition - fadeStart).clamp(0.0, 1.0).toDouble();
 
-        if (currentProgress < fadeStartPosition) {
+        if (currentProgress < relativePosition - fadeStart) {
           opacity = 0.0;
         } else {
-          final double fadeProgress =
-              (currentProgress - fadeStartPosition) / fadeWindow;
+          double fadeProgress =
+              (currentProgress - (relativePosition - fadeStart)) / fadeWindow;
           // Apply easing curve for more natural motion
-          final double easedProgress =
+          double easedProgress =
               Curves.easeInOut.transform(fadeProgress.clamp(0.0, 1.0));
           opacity = easedProgress;
         }

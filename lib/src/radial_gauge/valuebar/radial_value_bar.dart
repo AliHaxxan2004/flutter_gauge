@@ -36,6 +36,7 @@ class RadialValueBar extends ImplicitlyAnimatedWidget {
     this.valueBarThickness = 10,
     this.gradient,
     this.radialOffset = 0,
+    this.enableAnimation = true,
     this.initialAnimationFrom,
     Duration duration = const Duration(milliseconds: 1000),
     Curve curve = Curves.easeInOut,
@@ -126,6 +127,11 @@ class RadialValueBar extends ImplicitlyAnimatedWidget {
   ///
   final LinearGradient? gradient;
 
+  /// [enableAnimation] specifies whether to enable the animation for the value bar.
+  ///
+  /// Defaults to true.
+  final bool enableAnimation;
+
   /// [initialAnimationFrom] specifies the starting value for the initial animation.
   ///
   /// If null, no initial animation occurs.
@@ -151,7 +157,9 @@ class _RadialValueBarState extends AnimatedWidgetBaseState<RadialValueBar> {
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
-    final beginValue = _isFirstBuild && widget.initialAnimationFrom != null
+    final beginValue = _isFirstBuild &&
+            widget.enableAnimation &&
+            widget.initialAnimationFrom != null
         ? widget.initialAnimationFrom!
         : widget.value;
 
@@ -168,8 +176,12 @@ class _RadialValueBarState extends AnimatedWidgetBaseState<RadialValueBar> {
   Widget build(BuildContext context) {
     final RadialGaugeState scope = RadialGaugeState.of(context);
 
+    final double currentValue = widget.enableAnimation
+        ? (_valueTween?.evaluate(animation) ?? widget.value)
+        : widget.value;
+
     return _RadialValueBarRenderWidget(
-      value: _valueTween?.evaluate(animation) ?? widget.value,
+      value: currentValue,
       color: widget.color,
       gradient: widget.gradient ??
           LinearGradient(colors: [widget.color, widget.color]),
